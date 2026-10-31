@@ -284,8 +284,8 @@ export default function App() {
         <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><div><b>{dateTime().split(",")[0]}</b><small>{dateTime().split(",")[1]?.trim()}</small></div></div></div>
       </header>
 
-      <section className="panel order-panel order-panel-top">
-        <div className="panel-heading"><div className="panel-title"><span className="heading-icon red-icon"><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className="pill-count">{orderItems.length}</span></div>
+      <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
+        <div className="panel-heading"><div className="panel-title"><span className="heading-icon order-heading-icon"><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className="pill-count">{orderItems.length}</span></div>
         <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
@@ -315,7 +315,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Chemija (foto mašina)</h2><p>Bakų likutis vizualiai</p></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b><small>{p.code}</small></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"}/><StockBadge p={p}/>{isAdmin&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className={`chem-row ${p.name.includes("STB") ? "stabilizer-row" : "large-tank-row"}`} key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b><small>{p.code}</small></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"}/><StockBadge p={p}/>{isAdmin&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -376,9 +376,10 @@ function ProductRow({p,isAdmin,onAdjust,flash}) {
   return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone}) {
-  const full=Math.floor(Number(quantity)||0), half=(Number(quantity)||0)-full>=0.5;
-  const count=Math.max(3,Math.min(5,full+(half?1:0)));
-  return <div className={`tank-bar ${tone}`} aria-label={`Likutis ${quantity} bakų`}>{Array.from({length:count},(_,i)=>{const filled=i<full;const partial=i===full&&half;return <span key={i} className={`tank ${filled?"filled":partial?"partial":"empty"}`}><i/></span>})}</div>;
+  // Chemijos bako skalė: 0–5 l, rodoma penkiais aiškiais lygio segmentais.
+  const amount=Math.max(0,Math.min(5,Number(quantity)||0));
+  const full=Math.floor(amount), partial=amount-full>=0.5;
+  return <div className="tank-bar-wrap"><div className={`tank-bar ${tone}`} aria-label={`Bako likutis ${amount.toLocaleString("lt-LT")}/5 l`}>{Array.from({length:5},(_,i)=>{const filled=i<full;const half=i===full&&partial;return <span key={i} className={`tank ${filled?"filled":half?"partial":"empty"}`}><i/></span>})}</div><small>{amount.toLocaleString("lt-LT")}/5</small></div>;
 }
 function Modal({title,children,onClose,wide}) {
   useEffect(()=>{const f=e=>e.key==="Escape"&&onClose();window.addEventListener("keydown",f);return()=>window.removeEventListener("keydown",f)},[onClose]);
