@@ -238,3 +238,20 @@
  .chem-row .tank-bar-large{max-width:55px}
  .chem-row .tank-bar-large .tank{width:24px;height:32px}
 }
+
+/* Patikslinimai: desktop chemijos kodams vietos nebeužstoja bakų juosta. */
+@media(min-width:761px){
+ .chem-row{grid-template-columns:9px minmax(105px,1fr) minmax(88px,.85fr) minmax(0,1.45fr) minmax(65px,.65fr) 27px;gap:7px}
+ .chem-row .code-copy{width:100%;min-width:0}
+ .chem-row .tank-bar{justify-content:flex-start;max-width:100%;min-width:0}
+ .chem-row .tank-bar-large{max-width:100%;column-gap:4px;row-gap:4px}
+ .chem-row .tank-bar-small{max-width:100%;column-gap:3px;row-gap:4px}
+}
+.code-empty{display:inline-block;color:#9aa69e;font-size:10px;font-weight:500;white-space:nowrap}
+.order-panel-top.no-orders{border-color:#cfe8d5;box-shadow:0 3px 9px #237b4310}
+.order-panel-top.no-orders .panel-heading{border-bottom-color:#e0f0e4}
+.order-panel-top.no-orders .heading-icon,.order-ok-icon{background:#e4f7e7!important;color:#08783e!important}
+.order-panel-top.no-orders .order-indicator{background:#9ed6ad}
+.order-panel-top.has-orders{border-color:#f0dddd;box-shadow:0 3px 9px #9d2f2f0b}
+.order-panel-top.has-orders .panel-heading{border-bottom-color:#f0e5e5}
+.order-panel-top.has-orders .heading-icon{background:#ffeded;color:#c43c3c}
