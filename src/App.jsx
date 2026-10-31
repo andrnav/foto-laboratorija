@@ -45,6 +45,13 @@ function dateTime(d = new Date()) {
 function shortTime(s) { if (!s) return "—"; return new Date(s).toLocaleString("lt-LT", { hour:"2-digit", minute:"2-digit", second:"2-digit", day:"2-digit", month:"2-digit", year:"numeric" }); }
 function stockTone(p) { return Number(p.quantity) < Number(p.min_quantity) ? "low" : "ok"; }
 function displayName(p) { return p.kind === "paper" ? `${p.surface} ${String(p.width_cm).replace(".",",")} cm` : p.name; }
+function chemicalSortKey(name="") {
+  const n=name.toLowerCase();
+  if (n.includes("cd") || n.includes("developer")) return 0;
+  if (n.includes("bf") || n.includes("bleach fix")) return 1;
+  if (n.includes("stb") || n.includes("stabilizer")) return 2;
+  return 3;
+}
 
 export default function App() {
   const configured = Boolean(supabase);
@@ -122,8 +129,8 @@ export default function App() {
     !search || [p.name,p.surface,p.code,String(p.width_cm ?? "")].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())
   )), [products, active, search]);
   const papers = visibleProducts.filter(p => p.kind === "paper");
-  const chemicals = visibleProducts.filter(p => p.kind === "chemical");
-  const orderItems = products.filter(p => p.category === active && Number(p.quantity) < Number(p.min_quantity));
+  const chemicals = visibleProducts.filter(p => p.kind === "chemical").slice().sort((a,b) => chemicalSortKey(a.name)-chemicalSortKey(b.name) || a.name.localeCompare(b.name,"lt"));
+  const orderItems = products.filter(p => p.category === active && Number(p.quantity) < Number(p.min_quantity)).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
   const activeLogs = logs.filter(log => (log.products?.category || products.find(p => p.id === log.product_id)?.category) === active);
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
@@ -286,7 +293,7 @@ export default function App() {
 
       <section className="panel order-panel order-panel-top">
         <div className="panel-heading"><div className="panel-title"><span className="heading-icon red-icon"><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className="pill-count">{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -315,7 +322,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Chemija (foto mašina)</h2><p>Bakų likutis vizualiai</p></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b><small>{p.code}</small></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"} small={p.name==="STB Super Stabilizer"}/><StockBadge p={p}/>{isAdmin&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"} small={p.name==="STB Super Stabilizer"}/><StockBadge p={p}/>{isAdmin&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -324,14 +331,14 @@ export default function App() {
         <section className="panel category-panel photo-other-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>Kita</h2><p>Kitos foto laboratorijos medžiagos</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:"other",kind:"item"})}><Plus size={16}/> Pridėti</button>}</div>
           <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-            {categoryProducts.filter(p=>(p.subcategory||"other")==="other"&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase()))).map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
+            {categoryProducts.filter(p=>(p.subcategory||"other")==="other"&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase()))).slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
             {!categoryProducts.some(p=>(p.subcategory||"other")==="other")&&<div className="empty-state">Kitos foto medžiagos bus rodomos čia.</div>}
           </div>
         </section>
       </> : <section className="panel category-panel">
         <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Medžiagos suskirstytos pagal šios skilties kategorijas</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
         {<div className="subcategory-grid">{NAV.find(n=>n.id===active)?.sections.map(section=>{
-          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase())));
+          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase()))).slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
               {rows.map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}

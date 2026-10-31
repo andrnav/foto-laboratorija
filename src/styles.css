@@ -210,3 +210,31 @@
 .chem-row .tank-bar-small .tank i{left:1px;right:1px;bottom:1px}
 .tank-overflow{font-size:19px;line-height:1;font-weight:900;color:#53665a;margin-left:1px}
 @media(max-width:760px){.chem-row .tank-bar-large .tank{width:25px;height:34px}.chem-row .tank-bar-small .tank{width:15px;height:20px}.chem-row .tank-bar-large{gap:3px}}
+
+/* 2026-10-31: bakų eilučių laužymas, pilni kodai ir ryškesni pavadinimai */
+.chem-name{min-width:0}
+.chem-name b,.generic-row b,.order-item b,.paper-row b,.qr-library-row b{font-weight:800}
+.chem-row .code-copy{min-width:0;width:100%;max-width:100%;justify-content:flex-start;gap:4px;padding:5px 6px;font-size:10px}
+.chem-row .code-copy span{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.2}
+.chem-row .tank-bar{display:flex;flex-wrap:wrap;align-content:flex-start;min-width:0;max-width:100%;}
+.chem-row .tank-bar-large{max-width:190px;column-gap:5px;row-gap:5px}
+.chem-row .tank-bar-small{max-width:200px;column-gap:3px;row-gap:4px}
+.order-item>div:nth-child(2){min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.order-item .code-copy{max-width:100%;min-width:0;width:auto;justify-content:flex-start;font-size:10px;padding:4px 6px}
+.order-item .code-copy span{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:760px){
+ .chem-row{grid-template-columns:7px minmax(0,1fr) minmax(70px,.85fr) minmax(0,58px) minmax(58px,.65fr);align-items:center;row-gap:7px}
+ .chem-row .tank-bar-large{grid-column:2 / 5;grid-row:2;max-width:57px;column-gap:3px;row-gap:4px}
+ .chem-row .tank-bar-large .tank{width:25px;height:34px}
+ .chem-row .tank-bar-small{grid-column:2 / 5;grid-row:2;max-width:98px;column-gap:3px;row-gap:4px}
+ .chem-row .tank-bar-small .tank{width:15px;height:20px}
+ .chem-row .tank-overflow{font-size:16px}
+ .chem-row .code-copy{font-size:9px;padding:4px 3px}
+ .chem-row .stock-badge{grid-column:5;grid-row:1 / span 2;align-self:center}
+ .order-item .code-copy{font-size:10px}
+}
+@media(max-width:390px){
+ .chem-row{grid-template-columns:6px minmax(0,1fr) minmax(62px,.8fr) minmax(0,55px) minmax(54px,.6fr);gap:4px;row-gap:7px}
+ .chem-row .tank-bar-large{max-width:55px}
+ .chem-row .tank-bar-large .tank{width:24px;height:32px}
+}
