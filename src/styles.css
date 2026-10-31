@@ -239,32 +239,16 @@
  .chem-row .tank-bar-large .tank{width:24px;height:32px}
 }
 
-/* Patikslinimai: desktop chemijos kodams vietos nebeužstoja bakų juosta. */
-@media(min-width:761px){
- .chem-row{grid-template-columns:9px minmax(105px,1fr) minmax(88px,.85fr) minmax(0,1.45fr) minmax(65px,.65fr) 27px;gap:7px}
- .chem-row .code-copy{width:100%;min-width:0}
- .chem-row .tank-bar{justify-content:flex-start;max-width:100%;min-width:0}
- .chem-row .tank-bar-large{max-width:100%;column-gap:4px;row-gap:4px}
- .chem-row .tank-bar-small{max-width:100%;column-gap:3px;row-gap:4px}
-}
-.code-empty{display:inline-block;color:#9aa69e;font-size:10px;font-weight:500;white-space:nowrap}
-.order-panel-top.no-orders{border-color:#cfe8d5;box-shadow:0 3px 9px #237b4310}
-.order-panel-top.no-orders .panel-heading{border-bottom-color:#e0f0e4}
-.order-panel-top.no-orders .heading-icon,.order-ok-icon{background:#e4f7e7!important;color:#08783e!important}
-.order-panel-top.no-orders .order-indicator{background:#9ed6ad}
-.order-panel-top.has-orders{border-color:#f0dddd;box-shadow:0 3px 9px #9d2f2f0b}
-.order-panel-top.has-orders .panel-heading{border-bottom-color:#f0e5e5}
-.order-panel-top.has-orders .heading-icon{background:#ffeded;color:#c43c3c}
 
-/* Individualios prekių spalvos ir didesnis, sekundėmis atsinaujinantis laikrodis. */
-.generic-product-name{display:flex;align-items:center;gap:8px;min-width:0}
-.generic-product-name b{min-width:0;overflow-wrap:anywhere;font-weight:800}
-.product-color-dot{display:inline-block;width:11px;height:11px;min-width:11px;border-radius:50%;box-shadow:0 0 0 3px #edf3ef;border:1px solid #ffffff;}
-.digital-time{width:154px;min-width:154px;min-height:52px;font-size:28px;letter-spacing:1.2px;padding:12px 10px}
-@media(max-width:760px){.digital-time{width:126px;min-width:126px;min-height:0;font-size:15px;padding:9px 8px;letter-spacing:.6px}}
-@media(max-width:390px){.digital-time{width:116px;min-width:116px;font-size:14px;padding:8px 6px}}
-.clock-display{background:#dff6e3;border-radius:12px;padding:10px 13px;min-width:150px;align-items:center!important;gap:4px!important}
-.clock-display b{font-size:15px!important;font-variant-numeric:tabular-nums;white-space:nowrap;color:#075b31!important}
-.clock-display small{font-size:20px!important;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#075b31!important}
-@media(max-width:760px){.date-meta{display:flex!important}.clock-display{min-width:0;padding:7px 8px;border-radius:9px}.clock-display b{font-size:9px!important}.clock-display small{font-size:13px!important;letter-spacing:.3px}}
-@media(max-width:390px){.clock-display{padding:6px 5px}.clock-display small{font-size:12px!important}}
+/* Laikrodžio ir atnaujinimo laiko proporcijos: aiškūs, subalansuoti dydžiai. */
+.top-meta{display:flex;align-items:center;gap:22px}
+.updated{gap:11px;flex-shrink:0}
+.updated>svg{width:25px;height:25px;flex-shrink:0}
+.updated div{gap:5px}
+.updated small{font-size:12px;line-height:1.2;color:#78877e}
+.updated b{font-size:14px;line-height:1.25;color:#34483a;font-weight:800;white-space:nowrap}
+.date-meta{display:flex;align-items:center;justify-content:center;min-width:290px;padding:12px 20px;border-radius:18px;background:#dff6e3;color:#075b31;text-align:center}
+.date-meta div{align-items:center;gap:3px}
+.date-meta b,.date-meta small{font-size:25px!important;line-height:1.15;font-weight:800;letter-spacing:.1px;color:#075b31;white-space:nowrap}
+@media(max-width:1200px){.top-meta{gap:14px}.date-meta{min-width:250px;padding:10px 14px}.date-meta b,.date-meta small{font-size:21px!important}.updated small{font-size:11px}.updated b{font-size:13px}}
+@media(max-width:760px){.top-meta{display:none}}

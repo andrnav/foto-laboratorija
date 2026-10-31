@@ -13,8 +13,3 @@ Jei kamera atpažįsta QR kodą, bet likutis nepasikeičia, Supabase SQL Editor 
 - Svarbu: reikia iš naujo atsispausdinti QR etiketes, nes senose etiketėse užkoduotas tik prekės kodas, o ne svetainės nuoroda.
 - Telefonas turi atidaryti tą pačią naršyklę, kurioje administratorius jau prisijungęs. Jei kamera atidaro kitą naršyklę arba kitame telefone nėra administratoriaus sesijos, sistema atmes nuskaitymą.
 - QR etiketę generuokite jau paskelbtoje svetainėje, kad nuorodoje būtų tikras svetainės domenas, o ne `localhost`.
-
-### Prekių spalvos
-Atnaujinus esamą Supabase duomenų bazę, vieną kartą paleiskite `supabase/migration_2026_10_product_colors.sql` per Supabase SQL Editor. Ši migracija prideda `color` lauką kitų prekių spalvai išsaugoti. Naujoje duomenų bazėje lauką jau sukuria `schema.sql`.
-
-Prekės spalvą galima nustatyti kuriant arba koreguojant prekę. Foto popieriaus ir foto chemijos spalvos lieka valdomos atskirai.
