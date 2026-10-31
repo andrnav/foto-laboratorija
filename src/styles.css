@@ -201,29 +201,12 @@
   .photo-other-panel .row-action { width: 23px; height: 23px; }
 }
 
-
-/* Užsakymų būsena: žalia, kai visko pakanka; raudona, kai reikia užsakyti. */
-.order-panel-top.no-orders{border-color:#bfe5c8;box-shadow:0 3px 9px #23834a0b}
-.order-panel-top.no-orders .panel-heading{border-bottom-color:#d9efdf}
-.order-panel-top.no-orders .order-heading-icon{color:#168344;background:#e3f7e8}
-.order-panel-top.no-orders .pill-count{background:#e0f6e5;color:#168344}
-.order-panel-top.no-orders .order-indicator{background:#56bd76}
-.order-panel-top.has-orders{border-color:#f0caca;box-shadow:0 3px 9px #9d2f2f0b}
-.order-panel-top.has-orders .panel-heading{border-bottom-color:#f0dede}
-.order-panel-top.has-orders .order-heading-icon{color:#c84545;background:#fff0f0}
-.order-panel-top.has-orders .pill-count{background:#ffe4e4;color:#c23c3c}
-.order-panel-top.has-orders .order-indicator{background:#ee8888}
-.tank-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
-.tank-bar-wrap>small{font-size:10px;font-weight:800;color:#617166;white-space:nowrap}
-.tank-bar{gap:4px}
-.tank{width:25px;height:25px}
-.large-tank-row .tank{width:31px;height:34px;border-radius:3px 3px 8px 8px}
-.large-tank-row .tank:before{top:-4px;height:6px}
-.large-tank-row .tank-bar{gap:5px}
-.stabilizer-row .tank{width:17px;height:19px;border-radius:2px 2px 5px 5px}
-.stabilizer-row .tank:before{height:4px;top:-3px}
-.stabilizer-row .tank-bar{gap:3px}
-.chem-row{grid-template-columns:9px minmax(105px,1fr) 32px minmax(150px,1.15fr) minmax(65px,.65fr) 27px}
-@media(max-width:1100px){.large-tank-row .tank{width:25px;height:29px}.chem-row{grid-template-columns:8px minmax(90px,1fr) 28px minmax(120px,1fr) minmax(58px,.6fr) 25px;gap:6px}}
-@media(max-width:760px){.chem-row{grid-template-columns:7px minmax(90px,1fr) 27px minmax(116px,1fr) minmax(58px,.65fr);gap:5px}.large-tank-row .tank{width:21px;height:25px}.stabilizer-row .tank{width:15px;height:17px}.tank-bar{gap:2px}.tank-bar-wrap>small{font-size:9px}.chem-row .row-action{display:none}}
-@media(max-width:390px){.chem-row{grid-template-columns:6px minmax(78px,1fr) 22px minmax(100px,1fr) minmax(51px,.55fr);gap:3px}.large-tank-row .tank{width:18px;height:23px}.stabilizer-row .tank{width:13px;height:16px}.tank-bar{gap:2px}}
+/* Chemijos bakų vizualizacija: dideli CD/BF bakai, mažesni STB buteliukai. */
+.chem-row .tank-bar-large{gap:5px;justify-content:flex-start}
+.chem-row .tank-bar-large .tank{width:30px;height:39px;border-width:2px;border-radius:4px 4px 8px 8px;background:#f5f7f5;flex:0 0 auto}
+.chem-row .tank-bar-large .tank i{left:2px;right:2px;bottom:2px;border-radius:2px 2px 5px 5px;transition:height .2s ease}
+.chem-row .tank-bar-small{gap:3px;justify-content:flex-start}
+.chem-row .tank-bar-small .tank{width:17px;height:23px;border-width:1.5px;border-radius:3px 3px 6px 6px;flex:0 0 auto}
+.chem-row .tank-bar-small .tank i{left:1px;right:1px;bottom:1px}
+.tank-overflow{font-size:19px;line-height:1;font-weight:900;color:#53665a;margin-left:1px}
+@media(max-width:760px){.chem-row .tank-bar-large .tank{width:25px;height:34px}.chem-row .tank-bar-small .tank{width:15px;height:20px}.chem-row .tank-bar-large{gap:3px}}
