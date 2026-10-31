@@ -126,3 +126,9 @@ foto-laboratorijos-sandelis/
 └── supabase/
     └── schema.sql
 ```
+
+## Atnaujinimas: subkategorijos ir QR etikečių biblioteka
+
+Jei duomenų bazė jau buvo sukurta anksčiau, prieš įkeliant šią programos versiją vieną kartą paleiskite `supabase/migration_2026_10_categories.sql` per Supabase Dashboard → SQL Editor → New query. Migracija prideda `subcategory` lauką, leidžia rašalo lygius procentais ir automatiškai priskiria jau esančias foto popieriaus bei chemijos pozicijas jų subkategorijoms. Ji nekeičia prekių likučių ar kodų.
+
+Po migracijos įkelkite naują kodą į GitHub. Cloudflare Pages programą perkompiliuos automatiškai.

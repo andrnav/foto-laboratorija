@@ -10,7 +10,8 @@ create table if not exists public.admins (
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   category text not null check (category in ('photo','wide','sublimation','framing','other')),
-  kind text not null default 'item' check (kind in ('paper','chemical','item')),
+  subcategory text not null default 'other',
+  kind text not null default 'item' check (kind in ('paper','chemical','ink','item')),
   name text not null,
   surface text,
   width_cm numeric(6,2),
@@ -22,6 +23,9 @@ create table if not exists public.products (
   updated_at timestamptz not null default now(),
   constraint paper_fields_check check (
     (kind <> 'paper') or (surface is not null and width_cm is not null)
+  ),
+  constraint ink_percentage_check check (
+    (kind <> 'ink') or (quantity <= 100 and min_quantity <= 100)
   )
 );
 
@@ -39,6 +43,7 @@ create table if not exists public.stock_logs (
 );
 
 create index if not exists products_category_idx on public.products(category);
+create index if not exists products_category_subcategory_idx on public.products(category, subcategory);
 create index if not exists stock_logs_created_at_idx on public.stock_logs(created_at desc);
 create index if not exists stock_logs_product_id_idx on public.stock_logs(product_id);
 
@@ -125,18 +130,18 @@ grant execute on function public.scan_stock(text) to authenticated;
 grant execute on function public.adjust_stock(uuid,numeric,text) to authenticated;
 
 -- Pradinės foto medžiagos įkeliamos tik jei jų kodai dar neegzistuoja.
-insert into public.products(category,kind,name,surface,width_cm,code,quantity,min_quantity,unit)
+insert into public.products(category,subcategory,kind,name,surface,width_cm,code,quantity,min_quantity,unit)
 values
-('photo','paper','Glossy','Glossy',12.7,'FP-G127',5,4,'vnt.'),
-('photo','paper','Glossy','Glossy',15.2,'FP-G152',2,4,'vnt.'),
-('photo','paper','Glossy','Glossy',30.5,'FP-G305',6,4,'vnt.'),
-('photo','paper','Lustre','Lustre',12.7,'FP-L127',4,4,'vnt.'),
-('photo','paper','Lustre','Lustre',15.2,'FP-L152',7,4,'vnt.'),
-('photo','paper','Lustre','Lustre',30.5,'FP-L305',0,2,'vnt.'),
-('photo','paper','Silk','Silk',12.7,'FP-S127',3,3,'vnt.'),
-('photo','paper','Silk','Silk',15.2,'FP-S152',4,3,'vnt.'),
-('photo','paper','Silk','Silk',30.5,'FP-S305',5,4,'vnt.'),
-('photo','chemical','CD Developer',null,null,'CH-CD',2.5,2,'bak.'),
-('photo','chemical','BF Bleach Fix',null,null,'CH-BF',2,2,'bak.'),
-('photo','chemical','STB Super Stabilizer',null,null,'CH-STB',1.5,2,'bak.')
+('photo','paper','paper','Glossy','Glossy',12.7,'FP-G127',5,4,'vnt.'),
+('photo','paper','paper','Glossy','Glossy',15.2,'FP-G152',2,4,'vnt.'),
+('photo','paper','paper','Glossy','Glossy',30.5,'FP-G305',6,4,'vnt.'),
+('photo','paper','paper','Lustre','Lustre',12.7,'FP-L127',4,4,'vnt.'),
+('photo','paper','paper','Lustre','Lustre',15.2,'FP-L152',7,4,'vnt.'),
+('photo','paper','paper','Lustre','Lustre',30.5,'FP-L305',0,2,'vnt.'),
+('photo','paper','paper','Silk','Silk',12.7,'FP-S127',3,3,'vnt.'),
+('photo','paper','paper','Silk','Silk',15.2,'FP-S152',4,3,'vnt.'),
+('photo','paper','paper','Silk','Silk',30.5,'FP-S305',5,4,'vnt.'),
+('photo','chemical','chemical','CD Developer',null,null,'CH-CD',2.5,2,'bak.'),
+('photo','chemical','chemical','BF Bleach Fix',null,null,'CH-BF',2,2,'bak.'),
+('photo','chemical','chemical','STB Super Stabilizer',null,null,'CH-STB',1.5,2,'bak.')
 on conflict (code) do nothing;

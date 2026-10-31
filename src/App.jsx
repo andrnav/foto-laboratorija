@@ -15,17 +15,19 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const NAV = [
-  { id: "photo", label: "Foto medžiagos", icon: Layers3 },
-  { id: "wide", label: "Plačiaformatė spauda", icon: Printer },
-  { id: "sublimation", label: "Sublimacija", icon: CupSoda },
-  { id: "framing", label: "Rėminimas", icon: Frame },
-  { id: "other", label: "Kitos medžiagos", icon: Box },
+  { id: "photo", label: "Foto medžiagos", icon: Layers3, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
+  { id: "wide", label: "Plačiaformatė spauda", icon: Printer, sections: [{id:"paper",label:"Popierius"},{id:"ink",label:"Rašalas"},{id:"other",label:"Kita"}] },
+  { id: "sublimation", label: "Sublimacija", icon: CupSoda, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
+  { id: "framing", label: "Rėminimas", icon: Frame, sections: [{id:"subframes",label:"Poremiai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
+  { id: "other", label: "Kitos medžiagos", icon: Box, sections: [{id:"other",label:"Kita"}] },
 ];
+const SUBCATEGORY_LABELS = Object.fromEntries(NAV.flatMap(n => n.sections.map(s => [`${n.id}:${s.id}`, s.label])));
+function subcategoryLabel(category, subcategory) { return SUBCATEGORY_LABELS[`${category}:${subcategory || "other"}`] || "Kita"; }
 const CHEMICAL_COLORS = { "CD Developer": "blue", "BF Bleach Fix": "red", "STB Super Stabilizer": "yellow" };
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const STARTER = [
   ...["Glossy","Lustre","Silk"].flatMap((surface, si) => [12.7,15.2,30.5].map((width, wi) => ({
-    id:`demo-${si}-${wi}`, category:"photo", kind:"paper", name:surface, surface, width_cm:width,
+    id:`demo-${si}-${wi}`, category:"photo", subcategory:"paper", kind:"paper", name:surface, surface, width_cm:width,
     code:`FP-${["G","L","S"][si]}${Math.round(width*10)}`, quantity:[5,2,6,4,7,0,3,4,5][si*3+wi],
     min_quantity: surface==="Lustre" && width===30.5 ? 2 : (width===30.5 ? 4 : (surface==="Silk" ? 3 : 4)), unit:"vnt."
   }))),
@@ -33,7 +35,7 @@ const STARTER = [
     ["CD Developer","CH-CD",2.5,2,"blue"],
     ["BF Bleach Fix","CH-BF",2,2,"red"],
     ["STB Super Stabilizer","CH-STB",1.5,2,"yellow"]
-  ].map((x,i)=>({id:`chem-${i}`,category:"photo",kind:"chemical",name:x[0],code:x[1],quantity:x[2],min_quantity:x[3],unit:"bak.",color:x[4]}))
+  ].map((x,i)=>({id:`chem-${i}`,category:"photo",subcategory:"chemical",kind:"chemical",name:x[0],code:x[1],quantity:x[2],min_quantity:x[3],unit:"bak.",color:x[4]}))
 ];
 
 function fmt(n) { return Number(n ?? 0).toLocaleString("lt-LT", { maximumFractionDigits: 2 }); }
@@ -69,7 +71,7 @@ export default function App() {
     setLoading(true);
     const [{ data: ps, error: pe }, { data: ls }] = await Promise.all([
       supabase.from("products").select("*").order("category").order("kind").order("name").order("width_cm"),
-      supabase.from("stock_logs").select("*, products(name, surface, width_cm, code)").order("created_at", { ascending:false }).limit(12)
+      supabase.from("stock_logs").select("*, products(category, subcategory, name, surface, width_cm, code)").order("created_at", { ascending:false }).limit(100)
     ]);
     if (pe) setNotice(`Duomenų nepavyko įkelti: ${pe.message}`);
     else { setProducts(ps || []); setLogs(ls || []); setLastUpdated(new Date()); }
@@ -104,7 +106,8 @@ export default function App() {
   )), [products, active, search]);
   const papers = visibleProducts.filter(p => p.kind === "paper");
   const chemicals = visibleProducts.filter(p => p.kind === "chemical");
-  const orderItems = products.filter(p => Number(p.quantity) < Number(p.min_quantity));
+  const orderItems = products.filter(p => p.category === active && Number(p.quantity) < Number(p.min_quantity));
+  const activeLogs = logs.filter(log => (log.products?.category || products.find(p => p.id === log.product_id)?.category) === active);
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
   function flash(msg) { setNotice(msg); window.setTimeout(() => setNotice(""), 4500); }
@@ -146,7 +149,7 @@ export default function App() {
     if (!isAdmin) return flash("Naujas prekes gali pridėti tik administratorius.");
     if (!supabase) return flash("Duomenų bazė nesukonfigūruota.");
     const row = {
-      category: values.category, kind: values.kind, name: values.name.trim(),
+      category: values.category, subcategory: values.subcategory || "other", kind: values.kind, name: values.name.trim(),
       surface: values.kind === "paper" ? values.surface : null,
       width_cm: values.kind === "paper" ? Number(values.width_cm) : null,
       code: values.code.trim(), quantity: Number(values.quantity), min_quantity: Number(values.min_quantity),
@@ -217,7 +220,7 @@ export default function App() {
       </nav>
       <div className="nav-divider"></div>
       <div className="nav-caption">Sandėlio veiksmai</div>
-      <button className="nav-item" onClick={startScanner}><QrCode size={21}/><span>QR nuskaitymas</span></button>
+      <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"add"})}><PlusCircle size={21}/><span>Pridėti likutį</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"remove"})}><MinusCircle size={21}/><span>Atimti likutį</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"set"})}><Pencil size={21}/><span>Koreguoti likutį</span></button>
@@ -237,10 +240,9 @@ export default function App() {
         <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><Clock3 size={18}/><div><b>{dateTime().split(",")[0]}</b><small>{dateTime().split(",")[1]?.trim()}</small></div></div><div className="digital-time">{new Intl.DateTimeFormat("lt-LT",{timeZone:"Europe/Vilnius",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(now)}</div></div>
       </header>
 
-      <section className="summary-row">
-        <div className="summary-card order-summary"><div className="summary-icon"><ShoppingCart size={24}/></div><div className="summary-main"><b>Užsakomos medžiagos</b><span>{orderItems.length} pozicijos žemiau minimalaus likučio</span></div><strong className="summary-count">{orderItems.length}</strong></div>
-        <button className="summary-card scan-summary" onClick={startScanner}><div className="summary-icon"><ScanLine size={24}/></div><div className="summary-main"><b>Skenuoti QR</b><span>Vienas nuskaitymas = −1 vnt.</span></div><ChevronRight size={19}/></button>
-        <button className="summary-card add-summary" onClick={()=>setModal({type:"product"})}><div className="summary-icon"><Plus size={24}/></div><div className="summary-main"><b>Pridėti prekę</b><span>Bet kuriai kategorijai</span></div><ChevronRight size={19}/></button>
+      <section className="panel order-panel order-panel-top">
+        <div className="panel-heading"><div className="panel-title"><span className="heading-icon red-icon"><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className="pill-count">{orderItems.length}</span></div>
+        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -269,32 +271,41 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Chemija (foto mašina)</h2><p>Bakų likutis vizualiai</p></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b><small>{p.code}</small></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"}/><StockBadge p={p}/>{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"qr",product:p})} aria-label="QR etiketė" title="Rodyti QR etiketę"><QrCode size={15}/></button><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button></>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b><small>{p.code}</small></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"}/><StockBadge p={p}/>{isAdmin&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
           </section>
         </div>
+        <section className="panel category-panel photo-other-panel">
+          <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>Kita</h2><p>Kitos foto laboratorijos medžiagos</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:"other",kind:"item"})}><Plus size={16}/> Pridėti</button>}</div>
+          <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
+            {categoryProducts.filter(p=>(p.subcategory||"other")==="other"&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase()))).map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
+            {!categoryProducts.some(p=>(p.subcategory||"other")==="other")&&<div className="empty-state">Kitos foto medžiagos bus rodomos čia.</div>}
+          </div>
+        </section>
       </> : <section className="panel category-panel">
-        <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Šios kategorijos medžiagos ir likučiai</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
-        <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-          {categoryProducts.filter(p=>!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase())).map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.kind==="paper"?"Foto popierius":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" title="QR etiketė" onClick={()=>setModal({type:"qr",product:p})}><QrCode size={15}/></button><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
-          {!categoryProducts.length&&<div className="empty-state">Šioje kategorijoje dar nėra prekių. {isAdmin?"Paspauskite „Pridėti prekę“.":"Prisijungęs administratorius galės jas pridėti."}</div>}
-        </div>
+        <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Medžiagos suskirstytos pagal šios skilties kategorijas</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
+        {NAV.find(n=>n.id===active)?.sections.map(section=>{
+          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase())));
+          return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
+            <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
+              {rows.map(p=><div className="generic-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
+              {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
+            </div>
+          </div>;
+        })}
       </section>}
 
       <div className="bottom-grid">
         <section className="panel history-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><History size={23}/></span><div><h2>Naujausi pakeitimai</h2><p>Sandėlio veiksmų istorija</p></div></div><button className="text-button" onClick={()=>setModal({type:"history"})}>Visa istorija <ChevronRight size={16}/></button></div>
           <div className="history-table"><div className="table-head"><span>Laikas</span><span>Pozicija</span><span>Pokytis</span><span>Priežastis</span></div>
-            {logs.slice(0,5).map(log=><div className="history-row" key={log.id}><span>{shortTime(log.created_at)}</span><b>{log.products ? displayName(log.products) : log.product_name || "Prekė"}</b><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong><span>{log.reason||"Likučio pakeitimas"}</span></div>)}
-            {!logs.length&&<div className="empty-state">Pakeitimų istorija atsiras pradėjus naudoti sistemą.</div>}
+            {activeLogs.slice(0,5).map(log=><div className="history-row" key={log.id}><span>{shortTime(log.created_at)}</span><b>{log.products ? displayName(log.products) : log.product_name || "Prekė"}</b><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong><span>{log.reason||"Likučio pakeitimas"}</span></div>)}
+            {!activeLogs.length&&<div className="empty-state">Šioje skiltyje pakeitimų dar nėra.</div>}
           </div>
         </section>
-        <section className="panel order-panel">
-          <div className="panel-heading"><div className="panel-title"><span className="heading-icon red-icon"><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>Tik kai likutis mažesnis už minimumą</p></div></div><span className="pill-count">{orderItems.length}</span></div>
-          <div className="order-list">{orderItems.slice(0,6).map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{p.code}</small></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Visų prekių likučiai atitinka minimumą.</div>}</div>
-        </section>
+
       </div>
       <footer className="footer"><span>FOTO LABORATORIJA · Sandėlio sistema</span><span>{user&&isAdmin?"Administratoriaus režimas":"Viešas peržiūros režimas"} · Laikas: Lietuva</span></footer>
     </main>
@@ -302,15 +313,16 @@ export default function App() {
     <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);setSearch("");}}><Icon size={19}/><span>{item.id==="photo"?"Medžiagos":item.id==="wide"?"Spauda":item.id==="sublimation"?"Sublimacija":item.id==="framing"?"Rėminimas":"Kitos"}</span></button>})}</nav>
 
     {modal?.type==="login"&&<Modal title="Administratoriaus prisijungimas" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
-    {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} onSubmit={addProduct} busy={busy}/></Modal>}
+    {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
     {modal?.type==="adjust"&&<Modal title={modal.mode==="add"?"Pridėti likutį":modal.mode==="remove"?"Atimti likutį":"Koreguoti likutį"} onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} onSubmit={adjustStock} busy={busy}/></Modal>}
     {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Sėkmingai nuskaičius, likutis sumažės vienu vienetu.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
-    {modal?.type==="history"&&<Modal title="Pakeitimų istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={logs}/></Modal>}
+    {modal?.type==="history"&&<Modal title="Pakeitimų istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={activeLogs}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
+    {modal?.type==="qrLibrary"&&<Modal title="QR nuskaitymas ir etiketės" onClose={()=>setModal(null)} wide><QrLibrary products={products} isAdmin={isAdmin} onScan={startScanner} onPrint={product=>setModal({type:"qr",product})}/></Modal>}
   </div>;
 }
 
-function StockBadge({p}) { return <span className={`stock-badge ${stockTone(p)}`}>{fmt(p.quantity)} <i>/</i> {fmt(p.min_quantity)}</span>; }
+function StockBadge({p}) { const percent=p.kind==="ink"; return <span className={`stock-badge ${stockTone(p)}`}>{fmt(p.quantity)}{percent?"%":""} <i>/</i> {fmt(p.min_quantity)}{percent?"%":""}</span>; }
 function CopyCode({code,flash}) {
   const [copied,setCopied]=useState(false);
   async function copy(){try{await navigator.clipboard.writeText(code);setCopied(true);setTimeout(()=>setCopied(false),1400);}catch{flash("Nepavyko nukopijuoti kodo.");}}
@@ -332,15 +344,15 @@ function LoginForm({onSubmit,busy}) {
   const [email,setEmail]=useState("");const [password,setPassword]=useState("");
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit(email,password)}}><label>El. paštas<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@imone.lt"/></label><label>Slaptažodis<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary-button" disabled={busy}>{busy?"Jungiamasi…":"Prisijungti"}</button><p className="form-note">Administratoriaus paskyra sukuriama Supabase valdymo aplinkoje. Vieši lankytojai gali tik peržiūrėti likučius.</p></form>;
 }
-function ProductForm({category,kind:forcedKind,onSubmit,busy}) {
-  const [cat,setCat]=useState(category||"photo");const [kind,setKind]=useState(forcedKind||"paper");const [name,setName]=useState("");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState("bak.");
-  return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit({category:cat,kind,name:kind==="paper"?surface:name,surface,width_cm:width,code,quantity:qty,min_quantity:min,unit})}}>
-    <label>Kategorija<select value={cat} onChange={e=>setCat(e.target.value)}>{NAV.map(n=><option value={n.id} key={n.id}>{n.label}</option>)}</select></label>
-    <label>Prekės tipas<select value={kind} onChange={e=>setKind(e.target.value)}><option value="paper">Foto popierius</option><option value="chemical">Chemija / kita prekė</option></select></label>
-    {kind==="paper"?<><label>Paviršius<select value={surface} onChange={e=>setSurface(e.target.value)}><option>Glossy</option><option>Lustre</option><option>Silk</option></select></label><label>Plotis<select value={width} onChange={e=>setWidth(e.target.value)}><option value="12.7">12,7 cm</option><option value="15.2">15,2 cm</option><option value="30.5">30,5 cm</option></select></label></>:<><label>Prekės pavadinimas<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Pvz., papildoma chemija"/></label><label>Matavimo vienetas<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="bak.">bak.</option><option value="vnt.">vnt.</option><option value="l">l</option><option value="kg">kg</option><option value="pak.">pak.</option></select></label></>}
+function ProductForm({category,kind:forcedKind,subcategory:forcedSubcategory,onSubmit,busy}) {
+  const [cat,setCat]=useState(category||"photo");const [subcategory,setSubcategory]=useState(forcedSubcategory || (forcedKind==="paper"?"paper":forcedKind==="chemical"?"chemical":"other"));const [kind,setKind]=useState(forcedKind||"item");const [name,setName]=useState("");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState("bak.");
+  return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit({category:cat,subcategory,kind,name:kind==="paper"?surface:name,surface,width_cm:width,code,quantity:qty,min_quantity:min,unit})}}>
+    <label>Kategorija<select value={cat} onChange={e=>{const next=NAV.find(n=>n.id===e.target.value);setCat(e.target.value);const first=next?.sections[0]?.id||"other";setSubcategory(first);setKind(e.target.value==="photo"&&first==="paper"?"paper":e.target.value==="photo"&&first==="chemical"?"chemical":first==="ink"?"ink":"item");}}>{NAV.map(n=><option value={n.id} key={n.id}>{n.label}</option>)}</select></label>
+    <label>Medžiagų kategorija<select value={subcategory} onChange={e=>{setSubcategory(e.target.value);if(cat==="photo"&&e.target.value==="paper")setKind("paper");else if(cat==="photo"&&e.target.value==="chemical")setKind("chemical");else setKind(e.target.value==="ink"?"ink":"item");if(e.target.value==="ink")setUnit("%");}}>{(NAV.find(n=>n.id===cat)?.sections||[]).map(section=><option value={section.id} key={section.id}>{section.label}</option>)}</select></label>
+    {kind==="paper"?<><label>Paviršius<select value={surface} onChange={e=>setSurface(e.target.value)}><option>Glossy</option><option>Lustre</option><option>Silk</option></select></label><label>Plotis<select value={width} onChange={e=>setWidth(e.target.value)}><option value="12.7">12,7 cm</option><option value="15.2">15,2 cm</option><option value="30.5">30,5 cm</option></select></label></>:<><label>Prekės pavadinimas<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Pvz., papildoma chemija"/></label><label>Matavimo vienetas<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="bak.">bak.</option><option value="vnt.">vnt.</option><option value="l">l</option><option value="kg">kg</option><option value="pak.">pak.</option><option value="%">%</option></select></label></>}
     <label>Prekės kodas<input required value={code} onChange={e=>setCode(e.target.value)} placeholder="Unikalus kodas QR etiketėje"/></label>
-    <div className="form-two"><label>Dabartinis likutis<input type="number" required min="0" step="0.5" value={qty} onChange={e=>setQty(e.target.value)}/></label><label>Minimalus likutis<input type="number" required min="0" step="0.5" value={min} onChange={e=>setMin(e.target.value)}/></label></div>
-    <button className="primary-button" disabled={busy}>{busy?"Saugoma…":"Pridėti prekę"}</button><p className="form-note">Prekės kodas turi būti unikalus. Sukūrus prekę, QR etiketę galima atsispausdinti iš prekės valdymo skilties, kai ši funkcija bus įjungta.</p>
+    <div className="form-two"><label>{kind==="ink"?"Dabartinis lygis (%)":"Dabartinis likutis"}<input type="number" required min="0" max={kind==="ink"?100:undefined} step={kind==="ink"?1:"0.5"} value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{kind==="ink"?"Minimalus lygis (%)":"Minimalus likutis"}<input type="number" required min="0" max={kind==="ink"?100:undefined} step={kind==="ink"?1:"0.5"} value={min} onChange={e=>setMin(e.target.value)}/></label></div>
+    <button className="primary-button" disabled={busy}>{busy?"Saugoma…":"Pridėti prekę"}</button><p className="form-note">Prekės kodas turi būti unikalus. QR etiketes rasite šoninės juostos skiltyje „QR nuskaitymas“.</p>
   </form>;
 }
 function AdjustForm({products,initialProduct,mode,onSubmit,busy}) {
@@ -348,11 +360,18 @@ function AdjustForm({products,initialProduct,mode,onSubmit,busy}) {
   const [amount,setAmount]=useState(mode==="set"?String(initialProduct?.quantity??0):"1");const [reason,setReason]=useState(mode==="add"?"Papildymas":mode==="remove"?"Paėmimas":"Likučio perskaičiavimas");
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();if(!product)return;const n=Number(amount);const delta=mode==="add"?n:mode==="remove"?-n:n;onSubmit(product,delta,reason,mode==="set")}}>
     <label>Prekė<select required value={id} onChange={e=>{setId(e.target.value);const p=products.find(x=>String(x.id)===e.target.value);setAmount(mode==="set"?String(p?.quantity??0):"1")}}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code} ({fmt(p.quantity)})</option>)}</select></label>
-    <label>{mode==="set"?"Naujas tikslus likutis":"Kiekis"}<input type="number" required min="0" step="0.5" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" max={product?.kind==="ink"?100:undefined} step={product?.kind==="ink"?1:"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
     <label>Priežastis<select value={reason} onChange={e=>setReason(e.target.value)}><option>Papildymas</option><option>Paėmimas</option><option>QR nuskaitymas praleistas</option><option>Likučio perskaičiavimas</option><option>Brokuota / sugadinta</option><option>Kita</option></select></label>
     {product&&<div className="adjust-preview"><span>Dabartinis likutis</span><b>{fmt(product.quantity)} {product.unit}</b><span>Po pakeitimo</span><b>{fmt(mode==="set"?Number(amount):Number(product.quantity)+(mode==="remove"?-1:1)*Number(amount))} {product.unit}</b></div>}
     <button className="primary-button" disabled={busy||!product}>{busy?"Saugoma…":"Išsaugoti likutį"}</button>
   </form>;
+}
+function QrLibrary({products,isAdmin,onScan,onPrint}) {
+  const qrProducts=products.filter(p=>p.kind==="paper");
+  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti visų foto popieriaus pozicijų QR kodai. Etiketes atsispausdinkite vieną kartą ir naudokite prie pakuočių. Sėkmingas nuskaitymas sumažina foto popieriaus likutį vienu vienetu.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
+    {!isAdmin&&<p className="form-note">Etikečių spausdinimui ir likučio keitimui prisijunkite kaip administratorius.</p>}
+    <div className="qr-library-list">{qrProducts.slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="qr-library-row" key={p.id}><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><span className="stock-badge">{fmt(p.quantity)} {p.unit}</span>{isAdmin&&<button className="secondary-button" onClick={()=>onPrint(p)}><QrCode size={15}/> Spausdinti etiketę</button>}</div>)}{!qrProducts.length&&<div className="empty-state">Foto popieriaus QR kodai atsiras pridėjus popieriaus pozicijų.</div>}</div>
+  </div>;
 }
 function QrLabel({product}) {
   const label = displayName(product);
