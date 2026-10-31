@@ -54,6 +54,8 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
   const [loading, setLoading] = useState(configured);
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
@@ -65,6 +67,7 @@ export default function App() {
   const scannerRef = useRef(null);
   const scannerInstance = useRef(null);
   const scanInProgress = useRef(false);
+  const directScanHandled = useRef(false);
 
   const loadData = useCallback(async () => {
     if (!supabase) { setLoading(false); return; }
@@ -79,21 +82,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({data}) => setUser(data.session?.user || null));
+    if (!supabase) { setAuthReady(true); setAdminChecked(true); return; }
+    let alive = true;
+    const initSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionUser = data.session?.user || null;
+      if (!alive) return;
+      setUser(sessionUser);
+      if (sessionUser) await checkAdmin(sessionUser.id);
+      else { setIsAdmin(false); setAdminChecked(true); }
+      if (alive) setAuthReady(true);
+    };
+    initSession();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      const sessionUser = session?.user || null;
+      setUser(sessionUser);
       setIsAdmin(false);
-      if (session?.user) checkAdmin(session.user.id);
+      setAdminChecked(false);
+      if (sessionUser) {
+        // Supabase auth callback is kept short; admin lookup runs asynchronously.
+        setTimeout(() => { if (alive) checkAdmin(sessionUser.id); }, 0);
+      } else {
+        setAdminChecked(true);
+      }
+      setAuthReady(true);
     });
     loadData();
-    return () => listener.subscription.unsubscribe();
+    return () => { alive = false; listener.subscription.unsubscribe(); };
   }, [loadData]);
 
   async function checkAdmin(uid) {
-    if (!supabase) return;
+    if (!supabase) { setAdminChecked(true); return; }
     const { data, error } = await supabase.from("admins").select("user_id").eq("user_id", uid).maybeSingle();
     setIsAdmin(Boolean(data && !error));
+    setAdminChecked(true);
   }
 
   const visibleProducts = useMemo(() => products.filter(p => p.category === active && (
@@ -185,6 +207,23 @@ export default function App() {
       scanInProgress.current = false;
     }
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("scan");
+    if (!code || !authReady || !adminChecked || directScanHandled.current) return;
+    directScanHandled.current = true;
+    // Remove the action from the address bar immediately so refresh won't repeat it.
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("scan");
+    window.history.replaceState({}, "", cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+    if (!user || !isAdmin) {
+      flash("QR nuskaitymas atmestas. Šiame telefono naršyklės lange prisijunkite kaip administratorius. Likutis nepakeistas.");
+      return;
+    }
+    flash("QR kodas atpažintas. Tikrinamos administratoriaus teisės…");
+    scanCode(code);
+  }, [authReady, adminChecked, user, isAdmin]);
 
   async function startScanner() {
     if (!isAdmin) return flash("QR nuskaitymui prisijunkite kaip administratorius.");
@@ -377,7 +416,7 @@ function AdjustForm({products,initialProduct,mode:initialMode,onSubmit,busy}) {
 }
 function QrLibrary({products,isAdmin,onScan,onPrint}) {
   const qrProducts=products.filter(p=>p.kind==="paper");
-  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti visų foto popieriaus pozicijų QR kodai. Etiketes atsispausdinkite vieną kartą ir naudokite prie pakuočių. Sėkmingas nuskaitymas sumažina foto popieriaus likutį vienu vienetu.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
+  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti foto popieriaus QR kodai. Etiketę atsispausdinkite vieną kartą. Nukreipus į ją įprastą telefono kamerą, atsidarys svetainė ir likutis automatiškai sumažės 1 vnt., jei tame naršyklės lange esate prisijungę kaip administratorius.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
     {!isAdmin&&<p className="form-note">Etikečių spausdinimui ir likučio keitimui prisijunkite kaip administratorius.</p>}
     <div className="qr-library-list">{qrProducts.slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="qr-library-row" key={p.id}><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><span className="stock-badge">{fmt(p.quantity)} {p.unit}</span>{isAdmin&&<button className="secondary-button" onClick={()=>onPrint(p)}><QrCode size={15}/> Spausdinti etiketę</button>}</div>)}{!qrProducts.length&&<div className="empty-state">Foto popieriaus QR kodai atsiras pridėjus popieriaus pozicijų.</div>}</div>
   </div>;
@@ -387,11 +426,11 @@ function QrLabel({product}) {
   return <div className="qr-label-wrap">
     <div className="qr-print-label">
       <div className="qr-brand"><span className="brand-mark"><span></span><span></span></span><b>FOTO LABORATORIJA</b></div>
-      <QRCodeCanvas value={product.code} size={210} level="H" includeMargin />
+      <QRCodeCanvas value={`${window.location.origin}/?scan=${encodeURIComponent(product.code)}`} size={210} level="H" includeMargin />
       <h3>{label}</h3><p>{product.code}</p><small>Vienas nuskaitymas = −1 vnt.</small>
     </div>
     <button className="primary-button full-width" onClick={()=>window.print()}><Download size={16} style={{verticalAlign:"middle",marginRight:7}}/> Spausdinti QR etiketę</button>
-    <p className="form-note">QR kode užkoduotas tik prekės kodas. Atspausdinkite etiketę ir pritvirtinkite prie atitinkamos medžiagos.</p>
+    <p className="form-note">QR kode yra tiesioginė saugi nuoroda. Nuskenavus įprasta telefono kamera, svetainė atsidarys ir automatiškai atims 1 vnt. tik tada, jei tame pačiame naršyklės lange esate prisijungę kaip administratorius. Kitu atveju likutis nebus keičiamas.</p>
   </div>;
 }
 function HistoryModal({logs}) {
