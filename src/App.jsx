@@ -7,7 +7,7 @@ import {
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, Search, History,
   ChevronDown, ChevronRight, Plus, Minus, ScanLine, ShieldCheck, AlertTriangle,
-  Download, Trash2, LockKeyhole, Clock3
+  Download, Trash2, LockKeyhole
 } from "lucide-react";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -51,7 +51,6 @@ export default function App() {
   const [products, setProducts] = useState(STARTER);
   const [logs, setLogs] = useState([]);
   const [active, setActive] = useState("photo");
-  const [now, setNow] = useState(new Date());
   const [lastUpdated, setLastUpdated] = useState(null);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -65,6 +64,7 @@ export default function App() {
   const [scannerRunning, setScannerRunning] = useState(false);
   const scannerRef = useRef(null);
   const scannerInstance = useRef(null);
+  const scanInProgress = useRef(false);
 
   const loadData = useCallback(async () => {
     if (!supabase) { setLoading(false); return; }
@@ -76,11 +76,6 @@ export default function App() {
     if (pe) setNotice(`Duomenų nepavyko įkelti: ${pe.message}`);
     else { setProducts(ps || []); setLogs(ls || []); setLastUpdated(new Date()); }
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -168,17 +163,27 @@ export default function App() {
     else { await loadData(); flash("Prekė ištrinta."); }
   }
 
-  async function scanCode(code) {
+  async function scanCode(code, alreadyLocked = false) {
     const cleaned = String(code || "").trim();
-    if (!cleaned) return;
-    if (!supabase) return flash("QR nuskaitymas veiks prijungus duomenų bazę.");
+    if (!cleaned || (scanInProgress.current && !alreadyLocked)) return;
+    scanInProgress.current = true;
+    if (!supabase) { scanInProgress.current = false; return flash("QR nuskaitymas veiks prijungus duomenų bazę."); }
     setBusy(true);
-    const { data, error } = await supabase.rpc("scan_stock", { p_code: cleaned });
-    setBusy(false);
-    if (error) flash(`Nuskaitymo klaida: ${error.message}`);
-    else if (data?.status === "not_found") flash(`Kodas „${cleaned}“ nerastas.`);
-    else if (data?.status === "empty") flash("Sandėlyje likutis jau 0. Nieko neatimta.");
-    else { await loadData(); flash(`Nuskaityta: ${data.name}. Atimtas 1 vnt.`); }
+    try {
+      const { data, error } = await supabase.rpc("scan_stock", { p_code: cleaned });
+      if (error) flash(`QR nuskaityta („${cleaned}“), bet likutis nepakeistas: ${error.message}. Patikrinkite Supabase SQL funkciją ir administratoriaus teises.`);
+      else if (data?.status === "not_found") flash(`QR kodas perskaitytas („${cleaned}“), bet toks prekės kodas nerastas duomenų bazėje.`);
+      else if (data?.status === "empty") flash(`„${data.name || cleaned}“ likutis jau 0. Nieko neatimta.`);
+      else if (data?.status === "ok") {
+        await loadData();
+        flash(`Likutis atnaujintas: ${data.name || cleaned}. Dabar liko ${fmt(data.quantity)} vnt. (-1).`);
+      } else flash(`QR kodas perskaitytas („${cleaned}“), tačiau duomenų bazė grąžino netikėtą atsakymą. Likutį patikrinkite rankiniu būdu.`);
+    } catch (e) {
+      flash(`QR kodas perskaitytas, tačiau likučio pakeisti nepavyko: ${e.message || e}`);
+    } finally {
+      setBusy(false);
+      scanInProgress.current = false;
+    }
   }
 
   async function startScanner() {
@@ -191,15 +196,17 @@ export default function App() {
         scannerInstance.current = scanner;
         await scanner.start({ facingMode:"environment" }, { fps:10, qrbox:{width:230,height:230} },
           async decoded => {
+            if (scanInProgress.current) return;
+            scanInProgress.current = true;
             try { await scanner.stop(); } catch {}
             scannerInstance.current = null;
             setScannerRunning(false);
             setModal(null);
-            await scanCode(decoded);
+            await scanCode(decoded, true);
           }, () => {});
         setScannerRunning(true);
       } catch (e) { flash(`Nepavyko paleisti kameros: ${e.message || e}`); }
-    }, 150);
+    }, 250);
   }
   async function stopScanner() {
     if (scannerInstance.current) { try { await scannerInstance.current.stop(); } catch {} scannerInstance.current = null; }
@@ -221,9 +228,7 @@ export default function App() {
       <div className="nav-divider"></div>
       <div className="nav-caption">Sandėlio veiksmai</div>
       <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
-      <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"add"})}><PlusCircle size={21}/><span>Pridėti likutį</span></button>
-      <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"remove"})}><MinusCircle size={21}/><span>Atimti likutį</span></button>
-      <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"set"})}><Pencil size={21}/><span>Koreguoti likutį</span></button>
+      <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"add"})}><PlusCircle size={21}/><span>Likučių koregavimas</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"product"})}><Package size={21}/><span>Pridėti prekę</span></button>
       <div className="nav-divider"></div>
       <button className="nav-item" onClick={()=>setModal({type:"history"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos / istorija</span></button>
@@ -237,7 +242,7 @@ export default function App() {
     <main className="main-content">
       <header className="topbar">
         <div className="title-wrap"><button className="mobile-menu-button icon-button" onClick={()=>setMobileMenu(true)}><Menu size={23}/></button><div className="title-icon"><Layers3 size={30}/></div><div><h1>{pageTitle}</h1><p>Sandėlio likučiai ir medžiagų valdymas</p></div></div>
-        <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><Clock3 size={18}/><div><b>{dateTime().split(",")[0]}</b><small>{dateTime().split(",")[1]?.trim()}</small></div></div><div className="digital-time">{new Intl.DateTimeFormat("lt-LT",{timeZone:"Europe/Vilnius",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(now)}</div></div>
+        <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><div><b>{dateTime().split(",")[0]}</b><small>{dateTime().split(",")[1]?.trim()}</small></div></div></div>
       </header>
 
       <section className="panel order-panel order-panel-top">
@@ -286,7 +291,7 @@ export default function App() {
         </section>
       </> : <section className="panel category-panel">
         <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Medžiagos suskirstytos pagal šios skilties kategorijas</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
-        {NAV.find(n=>n.id===active)?.sections.map(section=>{
+        {<div className="subcategory-grid">{NAV.find(n=>n.id===active)?.sections.map(section=>{
           const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id&&(!search||[p.name,p.code].join(" ").toLowerCase().includes(search.toLowerCase())));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
@@ -294,7 +299,7 @@ export default function App() {
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
-        })}
+        })}</div>}
       </section>}
 
       <div className="bottom-grid">
@@ -314,7 +319,7 @@ export default function App() {
 
     {modal?.type==="login"&&<Modal title="Administratoriaus prisijungimas" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
-    {modal?.type==="adjust"&&<Modal title={modal.mode==="add"?"Pridėti likutį":modal.mode==="remove"?"Atimti likutį":"Koreguoti likutį"} onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} onSubmit={adjustStock} busy={busy}/></Modal>}
+    {modal?.type==="adjust"&&<Modal title="Likučių koregavimas" onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} onSubmit={adjustStock} busy={busy}/></Modal>}
     {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Sėkmingai nuskaičius, likutis sumažės vienu vienetu.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
     {modal?.type==="history"&&<Modal title="Pakeitimų istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={activeLogs}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
@@ -355,14 +360,18 @@ function ProductForm({category,kind:forcedKind,subcategory:forcedSubcategory,onS
     <button className="primary-button" disabled={busy}>{busy?"Saugoma…":"Pridėti prekę"}</button><p className="form-note">Prekės kodas turi būti unikalus. QR etiketes rasite šoninės juostos skiltyje „QR nuskaitymas“.</p>
   </form>;
 }
-function AdjustForm({products,initialProduct,mode,onSubmit,busy}) {
+function AdjustForm({products,initialProduct,mode:initialMode,onSubmit,busy}) {
+  const [mode,setMode]=useState(initialMode||"add");
   const [id,setId]=useState(initialProduct?.id||"");const product=products.find(p=>String(p.id)===String(id));
-  const [amount,setAmount]=useState(mode==="set"?String(initialProduct?.quantity??0):"1");const [reason,setReason]=useState(mode==="add"?"Papildymas":mode==="remove"?"Paėmimas":"Likučio perskaičiavimas");
+  const [amount,setAmount]=useState((initialMode||"add")==="set"?String(initialProduct?.quantity??0):"1");const [reason,setReason]=useState((initialMode||"add")==="add"?"Papildymas":(initialMode||"add")==="remove"?"Paėmimas":"Likučio perskaičiavimas");
+  function changeMode(next){setMode(next);setAmount(next==="set"?String(product?.quantity??0):"1");setReason(next==="add"?"Papildymas":next==="remove"?"Paėmimas":"Likučio perskaičiavimas");}
+  const after=product?(mode==="set"?Number(amount):Number(product.quantity)+(mode==="remove"?-1:1)*Number(amount)):0;
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();if(!product)return;const n=Number(amount);const delta=mode==="add"?n:mode==="remove"?-n:n;onSubmit(product,delta,reason,mode==="set")}}>
-    <label>Prekė<select required value={id} onChange={e=>{setId(e.target.value);const p=products.find(x=>String(x.id)===e.target.value);setAmount(mode==="set"?String(p?.quantity??0):"1")}}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code} ({fmt(p.quantity)})</option>)}</select></label>
-    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" max={product?.kind==="ink"?100:undefined} step={product?.kind==="ink"?1:"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+    <div className="adjust-mode-switch" role="group" aria-label="Likučio veiksmas"><button type="button" className={mode==="add"?"active":""} onClick={()=>changeMode("add")}><Plus size={15}/> Pridėti</button><button type="button" className={mode==="remove"?"active":""} onClick={()=>changeMode("remove")}><Minus size={15}/> Atimti</button><button type="button" className={mode==="set"?"active":""} onClick={()=>changeMode("set")}><Pencil size={15}/> Koreguoti</button></div>
+    <label>Prekė<select required value={id} onChange={e=>{setId(e.target.value);const p=products.find(x=>String(x.id)===e.target.value);setAmount(mode==="set"?String(p?.quantity??0):"1")}}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code} ({fmt(p.quantity)}{p.kind==="ink"?"%":""})</option>)}</select></label>
+    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min={mode==="set"?0:0} max={product?.kind==="ink"?100:undefined} step={product?.kind==="ink"?1:"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
     <label>Priežastis<select value={reason} onChange={e=>setReason(e.target.value)}><option>Papildymas</option><option>Paėmimas</option><option>QR nuskaitymas praleistas</option><option>Likučio perskaičiavimas</option><option>Brokuota / sugadinta</option><option>Kita</option></select></label>
-    {product&&<div className="adjust-preview"><span>Dabartinis likutis</span><b>{fmt(product.quantity)} {product.unit}</b><span>Po pakeitimo</span><b>{fmt(mode==="set"?Number(amount):Number(product.quantity)+(mode==="remove"?-1:1)*Number(amount))} {product.unit}</b></div>}
+    {product&&<div className="adjust-preview"><span>Dabartinis likutis</span><b>{fmt(product.quantity)}{product.kind==="ink"?"%":` ${product.unit}`}</b><span>Po pakeitimo</span><b>{fmt(after)}{product.kind==="ink"?"%":` ${product.unit}`}</b></div>}
     <button className="primary-button" disabled={busy||!product}>{busy?"Saugoma…":"Išsaugoti likutį"}</button>
   </form>;
 }
