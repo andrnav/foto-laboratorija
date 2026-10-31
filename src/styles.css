@@ -249,6 +249,6 @@
 .updated b{font-size:14px;line-height:1.25;color:#34483a;font-weight:800;white-space:nowrap}
 .date-meta{display:flex;align-items:center;justify-content:center;min-width:290px;padding:12px 20px;border-radius:18px;background:#dff6e3;color:#075b31;text-align:center}
 .date-meta div{align-items:center;gap:3px}
-.date-meta b,.date-meta small{font-size:25px!important;line-height:1.15;font-weight:800;letter-spacing:.1px;color:#075b31;white-space:nowrap}
-@media(max-width:1200px){.top-meta{gap:14px}.date-meta{min-width:250px;padding:10px 14px}.date-meta b,.date-meta small{font-size:21px!important}.updated small{font-size:11px}.updated b{font-size:13px}}
+.date-meta b{font-size:17px!important;line-height:1.15;font-weight:800;letter-spacing:.1px;color:#075b31;white-space:nowrap;text-transform:none}.date-meta small{font-size:23px!important;line-height:1.15;font-weight:800;letter-spacing:.1px;color:#075b31;white-space:nowrap;text-transform:none}
+@media(max-width:1200px){.top-meta{gap:14px}.date-meta{min-width:250px;padding:10px 14px}.date-meta b{font-size:15px!important}.date-meta small{font-size:19px!important}.updated small{font-size:11px}.updated b{font-size:13px}}
 @media(max-width:760px){.top-meta{display:none}}

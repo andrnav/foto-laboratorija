@@ -40,7 +40,10 @@ const STARTER = [
 
 function fmt(n) { return Number(n ?? 0).toLocaleString("lt-LT", { maximumFractionDigits: 2 }); }
 function dateTime(d = new Date()) {
-  return new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", year:"numeric",month:"2-digit",day:"2-digit",weekday:"long",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false }).format(d);
+  const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
+  const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
+  const time = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).format(d);
+  return `${date}, ${weekday} ${time}`;
 }
 function shortTime(s) { if (!s) return "—"; return new Date(s).toLocaleString("lt-LT", { hour:"2-digit", minute:"2-digit", second:"2-digit", day:"2-digit", month:"2-digit", year:"numeric" }); }
 function stockTone(p) { return Number(p.quantity) < Number(p.min_quantity) ? "low" : "ok"; }
@@ -59,6 +62,8 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [active, setActive] = useState("photo");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [clockNow, setClockNow] = useState(() => new Date());
+  useEffect(() => { const timer = setInterval(() => setClockNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -288,7 +293,7 @@ export default function App() {
     <main className="main-content">
       <header className="topbar">
         <div className="title-wrap"><button className="mobile-menu-button icon-button" onClick={()=>setMobileMenu(true)}><Menu size={23}/></button><div className="title-icon"><Layers3 size={30}/></div><div><h1>{pageTitle}</h1><p>Sandėlio likučiai ir medžiagų valdymas</p></div></div>
-        <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><div><b>{dateTime().split(",")[0]}</b><small>{dateTime().split(",")[1]?.trim()}</small></div></div></div>
+        <div className="top-meta"><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><div><b>{dateTime(clockNow).split(",")[0]}</b><small>{dateTime(clockNow).split(",")[1]?.trim()}</small></div></div></div>
       </header>
 
       <section className="panel order-panel order-panel-top">
