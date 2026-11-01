@@ -444,4 +444,4 @@
 }
 
 /* Desktop: hide header icons used only for mobile navigation. */
-@media (min-width: 769px){.topbar .mobile-menu-button,.topbar .title-icon{display:none!important}}
+@media (min-width: 769px){.topbar .mobile-menu-button{display:none!important}}
