@@ -364,7 +364,7 @@ export default function App() {
           const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><div><b>{displayName(p)}</b><small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock">{active==="wide"&&section.id==="paper"&&isRollProduct(p)&&<RollLevel quantity={p.quantity}/>}<StockBadge p={p}/></div><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
+              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><div><b>{displayName(p)}</b><small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{isAdmin&&<><button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button><button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button></>}</div></div>)}
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
@@ -409,15 +409,6 @@ function CopyCode({code,flash}) {
 }
 function ProductRow({p,isAdmin,onAdjust,flash}) {
   return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{isAdmin&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
-}
-function RollLevel({quantity}) {
-  const amount=Math.max(0,Number(quantity)||0);
-  const bars=Math.min(2,Math.ceil(amount-1e-8));
-  const levels=Array.from({length:bars},(_,i)=>Math.max(0,Math.min(1,amount-i)));
-  return <div className="roll-level" aria-label={`Popieriaus likutis: ${fmt(amount)} rulono`} title={`${fmt(amount)} rulono`}>
-    <div className="roll-bars">{levels.map((level,i)=><span className="roll-track" key={i}><i style={{width:`${level*100}%`}}/></span>)}{amount>2&&<b>2+</b>}</div>
-    <small>{fmt(amount)} rul.</small>
-  </div>;
 }
 function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
