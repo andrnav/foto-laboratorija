@@ -85,7 +85,8 @@ function categoryLastUpdated(products, logs, active) {
 
 export default function App() {
   const configured = Boolean(supabase);
-  const [products, setProducts] = useState(STARTER);
+  // Nekonfigūruotoje demonstracijoje rodomi pavyzdžiai; prijungus Supabase laukiame tikrų duomenų.
+  const [products, setProducts] = useState(() => configured ? [] : STARTER);
   const [logs, setLogs] = useState([]);
   const [active, setActive] = useState("photo");
   const [clockNow, setClockNow] = useState(() => new Date());
