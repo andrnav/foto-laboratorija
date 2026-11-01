@@ -160,17 +160,23 @@ export default function App() {
   }, [loadData]);
 
   async function checkAdmin(uid) {
-    if (!supabase) { setAdminChecked(true); return; }
+    if (!supabase) {
+      setIsAdmin(false); setIsEmployee(false); setAdminChecked(true);
+      return { isAdmin: false, isEmployee: false, error: "Supabase nesukonfigūruotas." };
+    }
     const { data: adminRow, error: adminError } = await supabase.from("admins").select("user_id").eq("user_id", uid).maybeSingle();
     const admin = Boolean(adminRow && !adminError);
     let employee = false;
-    if (!admin) {
-      const { data: employeeRow, error: employeeError } = await supabase.from("employees").select("user_id").eq("user_id", uid).maybeSingle();
-      employee = Boolean(employeeRow && !employeeError);
+    let employeeError = null;
+    if (!admin && !adminError) {
+      const result = await supabase.from("employees").select("user_id").eq("user_id", uid).maybeSingle();
+      employee = Boolean(result.data && !result.error);
+      employeeError = result.error;
     }
     setIsAdmin(admin);
     setIsEmployee(employee);
     setAdminChecked(true);
+    return { isAdmin: admin, isEmployee: employee, error: adminError || employeeError };
   }
 
   const visibleProducts = useMemo(() => products.filter(p => p.category === active), [products, active]);
@@ -186,10 +192,28 @@ export default function App() {
   async function signIn(email, password) {
     if (!supabase) return flash("Pirmiausia sukonfigūruokite Supabase nustatymus (.env).");
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setBusy(false);
+      flash(`Prisijungti nepavyko: ${error.message}`);
+      return;
+    }
+    const uid = data.user?.id;
+    if (!uid) {
+      setBusy(false);
+      flash("Prisijungimas patvirtintas, bet nepavyko gauti vartotojo ID. Pabandykite atnaujinti puslapį.");
+      return;
+    }
+    const access = await checkAdmin(uid);
     setBusy(false);
-    if (error) flash(`Prisijungti nepavyko: ${error.message}`);
-    else { setModal(null); flash("Prisijungta."); }
+    setModal(null);
+    if (access.error) {
+      flash(`Prisijungimas pavyko, bet nepavyko patikrinti teisių: ${access.error.message}. Patikrinkite, ar paleista darbuotojo SQL migracija.`);
+    } else if (!access.isAdmin && !access.isEmployee) {
+      flash("Prisijungimas pavyko, tačiau paskyrai nepriskirta darbuotojo ar administratoriaus rolė. Supabase SQL Editor paleiskite supabase/migration_2026_11_employee_role.sql.");
+    } else {
+      flash(access.isAdmin ? "Prisijungta kaip administratorius." : "Prisijungta kaip darbuotojas. Likučių koregavimas ir QR nuskaitymas aktyvūs.");
+    }
   }
   async function signOut() {
     if (supabase) await supabase.auth.signOut();
