@@ -109,12 +109,20 @@ export default function App() {
   const loadData = useCallback(async () => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: ps, error: pe }, { data: ls }] = await Promise.all([
-      supabase.from("products").select("*").order("category").order("kind").order("name").order("width_cm"),
-      supabase.from("stock_logs").select("*, products(category, subcategory, name, surface, width_cm, code)").order("created_at", { ascending:false }).limit(100)
-    ]);
-    if (pe) setNotice(`Duomenų nepavyko įkelti: ${pe.message}`);
-    else { setProducts(ps || []); setLogs(ls || []); }
+    const { data: ps, error: pe } = await supabase.from("products").select("*").order("category").order("kind").order("name").order("width_cm");
+    if (pe) { setNotice(`Duomenų nepavyko įkelti: ${pe.message}`); setLoading(false); return; }
+    // Krauname istoriją puslapiais, kad senesni įrašai neliktų už 100 įrašų ribos.
+    let allLogs = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data: batch, error: logError } = await supabase.from("stock_logs")
+        .select("*, products(category, subcategory, name, surface, width_cm, code)")
+        .order("created_at", { ascending:false }).range(from, from + pageSize - 1);
+      if (logError) { setNotice(`Istorijos nepavyko įkelti: ${logError.message}`); break; }
+      allLogs = allLogs.concat(batch || []);
+      if (!batch || batch.length < pageSize) break;
+    }
+    setProducts(ps || []); setLogs(allLogs);
     setLoading(false);
   }, []);
 
@@ -313,7 +321,8 @@ export default function App() {
       <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"add"})}><PlusCircle size={21}/><span>Likučių koregavimas</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"product"})}><Package size={21}/><span>Pridėti prekę</span></button>
       <div className="nav-divider"></div>
-      <button className="nav-item" onClick={()=>setModal({type:"history"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos / istorija</span></button>
+      <button className="nav-item" onClick={()=>setModal({type:"history"})}><History size={21}/><span>Istorija</span></button>
+      <button className="nav-item" onClick={()=>setModal({type:"reports"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos</span></button>
       <button className="nav-item" onClick={()=>flash("Nustatymų skiltis bus išplėsta vėlesniame etape.")}><Settings size={21}/><span>Nustatymai</span></button>
       <div className="sidebar-bottom">
         {user && isAdmin ? <><div className="admin-badge"><UserRound size={18}/><div><b>Administratorius</b><small>{user.email}</small></div></div><button className="nav-item" onClick={signOut}><LogOut size={20}/><span>Atsijungti</span></button></>
@@ -403,7 +412,8 @@ export default function App() {
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
     {modal?.type==="adjust"&&<Modal title="Likučių koregavimas" onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} onSubmit={adjustStock} busy={busy}/></Modal>}
     {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Sėkmingai nuskaičius, likutis sumažės vienu vienetu.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
-    {modal?.type==="history"&&<Modal title="Pakeitimų istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={activeLogs}/></Modal>}
+    {modal?.type==="history"&&<Modal title="Visa sandėlio istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={logs} products={products}/></Modal>}
+    {modal?.type==="reports"&&<Modal title="Sandėlio ataskaitos" onClose={()=>setModal(null)} wide><ReportsModal logs={logs} products={products}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
     {modal?.type==="qrLibrary"&&<Modal title="QR nuskaitymas ir etiketės" onClose={()=>setModal(null)} wide><QrLibrary products={products} isAdmin={isAdmin} onScan={startScanner} onPrint={product=>setModal({type:"qr",product})}/></Modal>}
   </div>;
@@ -501,6 +511,90 @@ function QrLabel({product}) {
     <p className="form-note">QR kode yra tiesioginė saugi nuoroda. Nuskenavus įprasta telefono kamera, svetainė atsidarys ir automatiškai atims 1 vnt. tik tada, jei tame pačiame naršyklės lange esate prisijungę kaip administratorius. Kitu atveju likutis nebus keičiamas.</p>
   </div>;
 }
-function HistoryModal({logs}) {
-  return <div className="history-modal-list">{logs.length?logs.map(log=><div className="history-modal-row" key={log.id}><div><b>{log.products?displayName(log.products):log.product_name||"Prekė"}</b><small>{shortTime(log.created_at)} · {log.reason||"Likučio pakeitimas"}</small></div><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong></div>):<div className="empty-state">Kol kas pakeitimų nėra.</div>}</div>;
+function logCategory(log, products=[]) {
+  const category = log.products?.category || products.find(p => p.id === log.product_id)?.category;
+  return NAV.find(n => n.id === category)?.label || "Ištrinta / nepriskirta prekė";
+}
+function HistoryModal({logs, products=[]}) {
+  const [category, setCategory] = useState("all");
+  const filtered = logs.filter(log => category === "all" || (log.products?.category || products.find(p => p.id === log.product_id)?.category) === category);
+  return <div className="report-content">
+    <div className="report-filter-grid history-filter"><label>Kategorija<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">Visos kategorijos</option>{NAV.map(n=><option key={n.id} value={n.id}>{n.label}</option>)}</select></label><div className="report-result-count">Įrašų: <b>{filtered.length}</b></div></div>
+    <div className="history-modal-list">{filtered.length?filtered.map(log=><div className="history-modal-row" key={log.id}><div><b>{log.products?displayName(log.products):log.product_name||"Prekė"}</b><small>{shortTime(log.created_at)} · {logCategory(log,products)} · {log.reason||"Likučio pakeitimas"}</small></div><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong></div>):<div className="empty-state">Pasirinktoje istorijoje įrašų nėra.</div>}</div>
+  </div>;
+}
+
+const REPORT_PRESETS = [
+  {value:"3",label:"3 dienos"},{value:"7",label:"7 dienos"},{value:"14",label:"14 dienų"},
+  {value:"30",label:"30 dienų"},{value:"60",label:"60 dienų"},{value:"90",label:"90 dienų"},
+  {value:"120",label:"120 dienų"},{value:"365",label:"365 dienos"},{value:"all",label:"Visas laikotarpis"},{value:"custom",label:"Pasirinkti datas"}
+];
+function localDateInput(date) {
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0,10);
+}
+function ReportsModal({logs, products=[]}) {
+  const today = new Date();
+  const [period, setPeriod] = useState("30");
+  const [fromDate, setFromDate] = useState(localDateInput(new Date(today.getFullYear(),today.getMonth(),today.getDate()-29)));
+  const [toDate, setToDate] = useState(localDateInput(today));
+  const [category, setCategory] = useState("all");
+  const [movement, setMovement] = useState("all");
+  const [search, setSearch] = useState("");
+  const dateRange = useMemo(() => {
+    if (period === "all") return {from:null,to:null};
+    if (period === "custom") return {from:fromDate ? new Date(`${fromDate}T00:00:00`) : null,to:toDate ? new Date(`${toDate}T23:59:59.999`) : null};
+    const days = Number(period); const end = new Date(); const start = new Date();
+    start.setDate(start.getDate() - days + 1); start.setHours(0,0,0,0);
+    return {from:start,to:end};
+  },[period,fromDate,toDate]);
+  const invalidRange = period === "custom" && fromDate && toDate && fromDate > toDate;
+  const filtered = useMemo(() => logs.filter(log => {
+    const delta = Number(log.delta);
+    const categoryId = log.products?.category || products.find(p=>p.id===log.product_id)?.category;
+    const stamp = new Date(log.created_at);
+    const name = log.products ? displayName(log.products) : (log.product_name || "Prekė");
+    if (invalidRange) return false;
+    if (dateRange.from && stamp < dateRange.from) return false;
+    if (dateRange.to && stamp > dateRange.to) return false;
+    if (category !== "all" && categoryId !== category) return false;
+    if (movement === "added" && delta <= 0) return false;
+    if (movement === "used" && delta >= 0) return false;
+    if (search.trim() && !`${name} ${log.code||""} ${log.reason||""}`.toLocaleLowerCase("lt").includes(search.trim().toLocaleLowerCase("lt"))) return false;
+    return true;
+  }),[logs,products,dateRange,category,movement,search,invalidRange]);
+  const totals = useMemo(() => {
+    const map = new Map();
+    for (const log of filtered) {
+      const key = `${log.product_id || log.product_name || "unknown"}`;
+      const name = log.products ? displayName(log.products) : (log.product_name || "Prekė");
+      const row = map.get(key) || {key,name,category:logCategory(log,products),added:0,used:0,events:0,last:log.created_at};
+      const delta = Number(log.delta)||0;
+      if (delta > 0) row.added += delta;
+      if (delta < 0) row.used += Math.abs(delta);
+      row.events += 1;
+      if (new Date(log.created_at) > new Date(row.last)) row.last = log.created_at;
+      map.set(key,row);
+    }
+    return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,"lt"));
+  },[filtered,products]);
+  const totalAdded = filtered.reduce((sum,l)=>sum+Math.max(0,Number(l.delta)||0),0);
+  const totalUsed = filtered.reduce((sum,l)=>sum+Math.max(0,-(Number(l.delta)||0)),0);
+  return <div className="report-content">
+    <p className="report-intro">Pasirink laikotarpį, kategoriją ir judėjimo tipą. Teigiamas pokytis reiškia papildymą, neigiamas – sunaudojimą arba paėmimą iš sandėlio.</p>
+    <div className="report-filter-grid">
+      <label>Laikotarpis<select value={period} onChange={e=>setPeriod(e.target.value)}>{REPORT_PRESETS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></label>
+      <label>Skiltis<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">Visos skiltys</option>{NAV.map(n=><option key={n.id} value={n.id}>{n.label}</option>)}</select></label>
+      <label>Veiksmas<select value={movement} onChange={e=>setMovement(e.target.value)}><option value="all">Papildyta ir sunaudota</option><option value="added">Tik papildyta</option><option value="used">Tik sunaudota / paimta</option></select></label>
+      <label>Prekės paieška<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Pavadinimas, kodas arba priežastis" /></label>
+    </div>
+    {period === "custom" && <div className="report-filter-grid custom-date-grid"><label>Nuo datos<input type="date" value={fromDate} onChange={e=>setFromDate(e.target.value)} /></label><label>Iki datos<input type="date" value={toDate} min={fromDate || undefined} onChange={e=>setToDate(e.target.value)} /></label></div>}
+    {invalidRange && <p className="report-validation">„Nuo“ data negali būti vėlesnė už „iki“ datą.</p>}
+    <div className="report-summary-cards"><div><small>Įvykių</small><b>{filtered.length}</b></div><div><small>Papildyta iš viso</small><b className="positive-text">+{fmt(totalAdded)}</b></div><div><small>Sunaudota / paimta</small><b className="negative-text">−{fmt(totalUsed)}</b></div></div>
+    <div className="report-table-wrap"><table className="report-table"><thead><tr><th>Prekė</th><th>Kategorija</th><th>Papildyta</th><th>Sunaudota</th><th>Įvykių</th><th>Paskutinis veiksmas</th></tr></thead><tbody>
+      {totals.map(row=><tr key={row.key}><td><b>{row.name}</b></td><td>{row.category}</td><td className="positive-text">{row.added?`+${fmt(row.added)}`:"—"}</td><td className="negative-text">{row.used?`−${fmt(row.used)}`:"—"}</td><td>{row.events}</td><td>{shortTime(row.last)}</td></tr>)}
+      {!totals.length&&<tr><td colSpan="6" className="report-empty">Pagal pasirinktus filtrus įrašų nerasta.</td></tr>}
+    </tbody></table></div>
+    <p className="form-note">Ataskaita skaičiuojama pagal užregistruotus sandėlio likučio pakeitimus. Pradiniai likučiai ir prekės sukūrimas be likučio judėjimo istorijos į sumas neįtraukiami.</p>
+  </div>;
 }
