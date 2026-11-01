@@ -382,3 +382,63 @@
 .report-content{display:grid;gap:15px;min-width:0}.report-intro{margin:0;color:#6e7f73;font-size:12px;line-height:1.55}.report-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}.report-filter-grid label{display:grid;gap:6px;color:#46574b;font-size:11px;font-weight:800;min-width:0}.report-filter-grid input,.report-filter-grid select{width:100%;min-width:0;border:1px solid #d5e1d8;border-radius:9px;padding:10px;background:#fff;color:#23372a;font-size:12px}.custom-date-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:520px}.history-filter{grid-template-columns:minmax(180px,1fr) auto}.report-result-count{align-self:center;color:#75857a;font-size:12px;padding:10px}.report-result-count b{color:#1b6e3b}.report-summary-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.report-summary-cards>div{display:flex;flex-direction:column;gap:7px;padding:13px;border:1px solid #e0eae3;background:#f8fbf8;border-radius:12px;min-width:0}.report-summary-cards small{font-size:10px;color:#718078}.report-summary-cards b{font-size:20px;color:#213d2b}.report-table-wrap{width:100%;overflow:auto;border:1px solid #e4ece6;border-radius:11px}.report-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}.report-table th{background:#f0f5f2;text-align:left;color:#617166;font-size:10px;padding:11px 12px}.report-table td{padding:11px 12px;border-top:1px solid #edf1ee;color:#425248}.report-table td b{color:#1d3325}.report-table .report-empty{text-align:center;padding:26px;color:#829087}.report-validation{margin:0;color:#bf3f3f;font-size:11px;font-weight:700}.report-content .form-note{line-height:1.5}.history-modal-list{max-height:55vh;overflow:auto}.history-modal-row{padding:12px 2px}.history-modal-row small{line-height:1.45}
 @media(max-width:900px){.report-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-table{min-width:700px}}
 @media(max-width:560px){.report-filter-grid{grid-template-columns:minmax(0,1fr)}.custom-date-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-summary-cards{gap:6px}.report-summary-cards>div{padding:10px 8px}.report-summary-cards small{font-size:9px}.report-summary-cards b{font-size:16px}.history-filter{grid-template-columns:minmax(0,1fr) auto}.history-modal-list{max-height:52vh}}
+
+/* V15: didesnis pagrindinės sandėlio dalies šriftas; šoninė juosta ir laikrodis paliekami kaip buvo. */
+.main-content .title-wrap h1 { font-size: clamp(25px, 2.1vw, 33px); }
+.main-content .title-wrap p { font-size: 13px; }
+.main-content .summary-main b { font-size: 15px; }
+.main-content .summary-main span { font-size: 12px; }
+.main-content .summary-count { font-size: 25px; }
+.main-content .searchbox input,
+.main-content .secondary-button,
+.main-content .small-green-button,
+.main-content .setup-banner b,
+.main-content .setup-banner span,
+.main-content .loading-line { font-size: 13px; }
+.main-content .panel-title h2 { font-size: 18px; }
+.main-content .panel-title p { font-size: 11px; }
+.main-content .table-head { font-size: 11px; }
+.main-content .paper-row { font-size: 12px; }
+.main-content .paper-width { font-size: 12px; }
+.main-content .code-copy { font-size: 11px; }
+.main-content .stock-badge { font-size: 12px; }
+.main-content .chem-name b { font-size: 13px; }
+.main-content .chem-name small { font-size: 11px; }
+.main-content .chem-legend span { font-size: 10px; }
+.main-content .history-row { font-size: 11px; }
+.main-content .history-row b { font-size: 11px; }
+.main-content .order-item b { font-size: 13px; }
+.main-content .order-item small { font-size: 11px; }
+.main-content .subcategory-heading h3 { font-size: 15px; }
+.main-content .subcategory-heading > span { font-size: 11px; }
+.main-content .generic-table .table-head { font-size: 11px; }
+.main-content .generic-row { font-size: 12px; }
+.main-content .generic-row b { font-size: 12px; }
+.main-content .generic-row small { font-size: 10px; }
+.main-content .report-intro,
+.main-content .report-result-count,
+.main-content .report-table { font-size: 12px; }
+.main-content .report-table th { font-size: 11px; }
+.main-content .report-summary-cards small { font-size: 11px; }
+.main-content .report-filter-grid label { font-size: 12px; }
+.main-content .report-filter-grid input,
+.main-content .report-filter-grid select { font-size: 13px; }
+@media (max-width: 760px) {
+  .main-content .title-wrap h1 { font-size: 22px; }
+  .main-content .summary-main b { font-size: 13px; }
+  .main-content .summary-main span { font-size: 11px; }
+  .main-content .panel-title h2 { font-size: 16px; }
+  .main-content .panel-title p { font-size: 10px; }
+  .main-content .table-head { font-size: 10px; }
+  .main-content .paper-row { font-size: 11px; }
+  .main-content .paper-width { font-size: 11px; }
+  .main-content .code-copy { font-size: 10px; }
+  .main-content .stock-badge { font-size: 11px; }
+  .main-content .chem-name b { font-size: 11px; }
+  .main-content .chem-name small { font-size: 10px; }
+  .main-content .chem-legend span { font-size: 9px; }
+  .main-content .generic-table .table-head { font-size: 10px; }
+  .main-content .generic-row { font-size: 11px; }
+  .main-content .generic-row b { font-size: 11px; }
+  .main-content .generic-row small { font-size: 9px; }
+}
