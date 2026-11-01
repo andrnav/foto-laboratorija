@@ -442,3 +442,6 @@
   .main-content .generic-row b { font-size: 11px; }
   .main-content .generic-row small { font-size: 9px; }
 }
+
+/* Desktop: hide header icons used only for mobile navigation. */
+@media (min-width: 769px){.topbar .mobile-menu-button,.topbar .title-icon{display:none!important}}
