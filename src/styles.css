@@ -267,3 +267,43 @@
 @media(max-width:1200px){.top-meta{gap:12px}.date-meta{width:auto;gap:10px;padding:10px 12px}.clock-calendar-icon{width:46px;height:46px;flex-basis:46px;border-radius:12px}.clock-calendar-icon svg{width:29px;height:29px}.clock-date-copy{gap:5px!important}.clock-date-copy b{font-size:15px!important}.clock-date-copy small{font-size:12px!important}.clock-time{font-size:27px;letter-spacing:-.7px}.clock-divider{min-height:42px}}
 @media(max-width:900px) and (min-width:761px){.updated{display:none}.date-meta{gap:10px}.clock-calendar-icon{display:none}.clock-time{font-size:28px}}
 @media(max-width:760px){.top-meta{display:none}}
+
+/* Viršutinės juostos kompaktiškas laikrodis ir žalia užsakymų būsena. */
+.topbar{align-items:center}
+.top-meta{align-items:center;gap:18px}
+.updated{min-height:48px}
+.date-meta{box-sizing:border-box;height:58px;min-height:58px;width:auto;min-width:0;gap:12px;padding:7px 14px;border-radius:18px;box-shadow:0 3px 10px rgba(19,91,48,.04)}
+.clock-calendar-icon{width:40px;height:40px;flex:0 0 40px;border-radius:12px}
+.clock-calendar-icon svg{width:25px;height:25px}
+.clock-date-copy{gap:3px!important}
+.clock-date-copy b{font-size:16px!important;line-height:1.05}
+.clock-date-copy small{font-size:13px!important;line-height:1.1}
+.clock-divider{min-height:35px}
+.clock-time{font-size:28px;line-height:1;letter-spacing:-.6px}
+.order-panel-top{border-color:#dcebe0;box-shadow:0 3px 9px rgba(30,100,55,.04)}
+.order-panel-top .panel-heading{border-bottom-color:#e5efe7}
+.order-panel-top.has-orders{border-color:#f0dddd;box-shadow:0 3px 9px #9d2f2f0b}
+.order-panel-top.has-orders .panel-heading{border-bottom-color:#f0e5e5}
+.order-panel-top.no-orders .order-indicator{background:#a8d9b4}
+.green-icon{color:#168044;background:#e3f7e8}
+.pill-count.count-green{background:#dff5e4;color:#19733c}
+.pill-count.count-red{background:#ffe4e4;color:#c23c3c}
+.order-panel-top.no-orders .pill-count{background:#dff5e4;color:#19733c}
+@media(max-width:1450px){
+ .date-meta{height:54px;min-height:54px;padding:6px 11px;gap:9px}
+ .clock-calendar-icon{width:36px;height:36px;flex-basis:36px}
+ .clock-calendar-icon svg{width:23px;height:23px}
+ .clock-date-copy b{font-size:14px!important}
+ .clock-date-copy small{font-size:12px!important}
+ .clock-divider{min-height:32px}
+ .clock-time{font-size:25px;letter-spacing:-.5px}
+}
+@media(max-width:1200px){
+ .date-meta{height:50px;min-height:50px;padding:5px 9px;gap:8px}
+ .clock-calendar-icon{width:32px;height:32px;flex-basis:32px}
+ .clock-calendar-icon svg{width:21px;height:21px}
+ .clock-date-copy b{font-size:12px!important}
+ .clock-date-copy small{font-size:11px!important}
+ .clock-divider{min-height:29px}
+ .clock-time{font-size:22px;letter-spacing:-.4px}
+}
