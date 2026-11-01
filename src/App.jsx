@@ -553,22 +553,28 @@ function ReportsModal({logs, products=[]}) {
     const delta = Number(log.delta);
     const categoryId = log.products?.category || products.find(p=>p.id===log.product_id)?.category;
     const stamp = new Date(log.created_at);
-    const name = log.products ? displayName(log.products) : (log.product_name || "Prekė");
+    const linkedProduct = log.products || products.find(p=>p.id===log.product_id);
+    const name = linkedProduct ? displayName(linkedProduct) : (log.product_name || "Prekė");
+    const code = String(log.code || linkedProduct?.code || "").trim();
     if (invalidRange) return false;
     if (dateRange.from && stamp < dateRange.from) return false;
     if (dateRange.to && stamp > dateRange.to) return false;
     if (category !== "all" && categoryId !== category) return false;
     if (movement === "added" && delta <= 0) return false;
     if (movement === "used" && delta >= 0) return false;
-    if (search.trim() && !`${name} ${log.code||""} ${log.reason||""}`.toLocaleLowerCase("lt").includes(search.trim().toLocaleLowerCase("lt"))) return false;
+    const query = search.trim().toLocaleLowerCase("lt");
+    if (query && !`${name} ${code} ${log.reason||""}`.toLocaleLowerCase("lt").includes(query)) return false;
     return true;
   }),[logs,products,dateRange,category,movement,search,invalidRange]);
   const totals = useMemo(() => {
     const map = new Map();
     for (const log of filtered) {
       const key = `${log.product_id || log.product_name || "unknown"}`;
-      const name = log.products ? displayName(log.products) : (log.product_name || "Prekė");
-      const row = map.get(key) || {key,name,category:logCategory(log,products),added:0,used:0,events:0,last:log.created_at};
+      const linkedProduct = log.products || products.find(p=>p.id===log.product_id);
+      const name = linkedProduct ? displayName(linkedProduct) : (log.product_name || "Prekė");
+      const code = String(log.code || linkedProduct?.code || "").trim();
+      const row = map.get(key) || {key,name,code,category:logCategory(log,products),added:0,used:0,events:0,last:log.created_at};
+      if (!row.code && code) row.code = code;
       const delta = Number(log.delta)||0;
       if (delta > 0) row.added += delta;
       if (delta < 0) row.used += Math.abs(delta);
@@ -591,9 +597,9 @@ function ReportsModal({logs, products=[]}) {
     {period === "custom" && <div className="report-filter-grid custom-date-grid"><label>Nuo datos<input type="date" value={fromDate} onChange={e=>setFromDate(e.target.value)} /></label><label>Iki datos<input type="date" value={toDate} min={fromDate || undefined} onChange={e=>setToDate(e.target.value)} /></label></div>}
     {invalidRange && <p className="report-validation">„Nuo“ data negali būti vėlesnė už „iki“ datą.</p>}
     <div className="report-summary-cards"><div><small>Įvykių</small><b>{filtered.length}</b></div><div><small>Papildyta iš viso</small><b className="positive-text">+{fmt(totalAdded)}</b></div><div><small>Sunaudota / paimta</small><b className="negative-text">−{fmt(totalUsed)}</b></div></div>
-    <div className="report-table-wrap"><table className="report-table"><thead><tr><th>Prekė</th><th>Kategorija</th><th>Papildyta</th><th>Sunaudota</th><th>Įvykių</th><th>Paskutinis veiksmas</th></tr></thead><tbody>
-      {totals.map(row=><tr key={row.key}><td><b>{row.name}</b></td><td>{row.category}</td><td className="positive-text">{row.added?`+${fmt(row.added)}`:"—"}</td><td className="negative-text">{row.used?`−${fmt(row.used)}`:"—"}</td><td>{row.events}</td><td>{shortTime(row.last)}</td></tr>)}
-      {!totals.length&&<tr><td colSpan="6" className="report-empty">Pagal pasirinktus filtrus įrašų nerasta.</td></tr>}
+    <div className="report-table-wrap"><table className="report-table"><thead><tr><th>Prekė</th><th>Kodas</th><th>Kategorija</th><th>Papildyta</th><th>Sunaudota</th><th>Įvykių</th><th>Paskutinis veiksmas</th></tr></thead><tbody>
+      {totals.map(row=><tr key={row.key}><td><b>{row.name}</b></td><td>{row.code || "—"}</td><td>{row.category}</td><td className="positive-text">{row.added?`+${fmt(row.added)}`:"—"}</td><td className="negative-text">{row.used?`−${fmt(row.used)}`:"—"}</td><td>{row.events}</td><td>{shortTime(row.last)}</td></tr>)}
+      {!totals.length&&<tr><td colSpan="7" className="report-empty">Pagal pasirinktus filtrus įrašų nerasta.</td></tr>}
     </tbody></table></div>
     <p className="form-note">Ataskaita skaičiuojama pagal užregistruotus sandėlio likučio pakeitimus. Pradiniai likučiai ir prekės sukūrimas be likučio judėjimo istorijos į sumas neįtraukiami.</p>
   </div>;
