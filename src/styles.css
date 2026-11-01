@@ -307,3 +307,21 @@
  .clock-divider{min-height:29px}
  .clock-time{font-size:22px;letter-spacing:-.4px}
 }
+
+/* Prekių spalvos ir kodų atvaizdavimas */
+.generic-row { border-radius: 7px; margin: 2px 0; }
+.generic-row > div:first-child > b { font-weight: 850; }
+.generic-row .stock-badge { font-weight: 800; }
+.code-copy { font-weight: 400; }
+.code-no-code { display: inline-block; min-width: 0; color: #77857b; font-size: 10px; font-weight: 400; font-style: italic; overflow-wrap: anywhere; }
+
+/* Chemijos bakai: didieji po 3 eilutėje, STB po 5 eilutėje. */
+.chem-row .tank-bar-large { width: 105px; max-width: 105px; display: flex; flex-wrap: wrap; column-gap: 5px; row-gap: 5px; align-content: flex-start; }
+.chem-row .tank-bar-large .tank { width: 30px; height: 39px; flex: 0 0 30px; }
+.chem-row .tank-bar-small { width: 97px; max-width: 97px; display: flex; flex-wrap: wrap; column-gap: 3px; row-gap: 4px; align-content: flex-start; }
+.chem-row .tank-bar-small .tank { width: 17px; height: 23px; flex: 0 0 17px; }
+.chem-row .tank-overflow { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .chem-row .tank-bar-large { width: 105px; max-width: 105px; }
+  .chem-row .tank-bar-small { width: 97px; max-width: 97px; }
+}
