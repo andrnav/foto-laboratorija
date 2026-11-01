@@ -69,12 +69,25 @@ function chemicalSortKey(name="") {
   return 3;
 }
 
+function categoryLastUpdated(products, logs, active) {
+  const categoryForActive = active === "photo" ? "photo" : active;
+  const candidates = [];
+  for (const p of products || []) {
+    if (p.category === categoryForActive && p.updated_at) candidates.push(new Date(p.updated_at));
+  }
+  for (const log of logs || []) {
+    const category = log.products?.category || log.category;
+    if (category === categoryForActive && log.created_at) candidates.push(new Date(log.created_at));
+  }
+  const valid = candidates.filter(d => Number.isFinite(d.getTime()));
+  return valid.length ? new Date(Math.max(...valid.map(d => d.getTime()))) : null;
+}
+
 export default function App() {
   const configured = Boolean(supabase);
   const [products, setProducts] = useState(STARTER);
   const [logs, setLogs] = useState([]);
   const [active, setActive] = useState("photo");
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [clockNow, setClockNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setClockNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const [user, setUser] = useState(null);
@@ -101,7 +114,7 @@ export default function App() {
       supabase.from("stock_logs").select("*, products(category, subcategory, name, surface, width_cm, code)").order("created_at", { ascending:false }).limit(100)
     ]);
     if (pe) setNotice(`Duomenų nepavyko įkelti: ${pe.message}`);
-    else { setProducts(ps || []); setLogs(ls || []); setLastUpdated(new Date()); }
+    else { setProducts(ps || []); setLogs(ls || []); }
     setLoading(false);
   }, []);
 
@@ -311,7 +324,7 @@ export default function App() {
     <main className="main-content">
       <header className="topbar">
         <div className="title-wrap"><button className="mobile-menu-button icon-button" onClick={()=>setMobileMenu(true)}><Menu size={23}/></button><div className="title-icon"><Layers3 size={30}/></div><div><h1>{pageTitle}</h1><p>Sandėlio likučiai ir medžiagų valdymas</p></div></div>
-        <div className="top-meta"><button className="refresh-top-button" onClick={refreshProducts}><RefreshCw size={17}/> Atnaujinti</button><div className="updated"><RefreshCw size={19}/><div><small>Paskutinį kartą atnaujinta</small><b>{lastUpdated ? shortTime(lastUpdated) : "Laukiama duomenų"}</b></div></div><div className="date-meta"><div className="clock-calendar-icon"><CalendarDays size={43} strokeWidth={2.2}/></div><div className="clock-date-copy"><b>{clockParts(clockNow).weekday}</b><small>{clockParts(clockNow).date}</small></div><div className="clock-divider" aria-hidden="true"></div><div className="clock-time">{clockParts(clockNow).time}</div></div></div>
+        <div className="top-meta"><button className="refresh-top-button" onClick={refreshProducts}><RefreshCw size={17}/> Atnaujinti</button><div className="updated"><RefreshCw size={19}/><div><small>Paskutinis pakeitimas šioje skiltyje</small><b>{categoryLastUpdated(products, logs, active) ? shortTime(categoryLastUpdated(products, logs, active)) : "Pakeitimų nėra"}</b></div></div><div className="date-meta"><div className="clock-calendar-icon"><CalendarDays size={43} strokeWidth={2.2}/></div><div className="clock-date-copy"><b>{clockParts(clockNow).weekday}</b><small>{clockParts(clockNow).date}</small></div><div className="clock-divider" aria-hidden="true"></div><div className="clock-time">{clockParts(clockNow).time}</div></div></div>
       </header>
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>

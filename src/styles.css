@@ -330,7 +330,7 @@
 .refresh-top-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 13px;border:1px solid #cfe5d5;border-radius:11px;background:#fff;color:#08783e;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 5px rgba(22,70,38,.04)}
 .refresh-top-button:hover{background:#eff9f1;border-color:#9fd2ad}
 .top-meta{gap:14px}
-@media(max-width:760px){.top-meta{display:flex;align-items:center;justify-content:flex-end;gap:0}.top-meta .updated,.top-meta .date-meta{display:none}.refresh-top-button{min-height:34px;padding:0 9px;font-size:10px}.wide-paper-row{min-width:570px}}
+@media(max-width:760px){.top-meta{display:flex;align-items:center;justify-content:flex-end;gap:0}.top-meta .updated,.top-meta .date-meta{display:none}.refresh-top-button{min-height:34px;padding:0 9px;font-size:10px}.wide-paper-row{min-width:0}}
 
 /* Responsive fixes: tablet clock layout and mobile last-updated visibility. */
 @media (min-width: 761px) and (max-width: 1200px) {
@@ -362,3 +362,18 @@
 .app-shell.view-only .generic-table .table-head,
 .app-shell.view-only .generic-row { grid-template-columns: minmax(120px,1.35fr) minmax(100px,.8fr) minmax(100px,.85fr); }
 .app-shell.view-only .wide-paper-row { grid-template-columns: minmax(120px,1fr) minmax(100px,.7fr) minmax(190px,1fr); }
+
+/* Plačiaformatės spaudos likučiai prisitaiko prie siauro ekrano kaip kitos kategorijos. */
+@media (max-width: 760px) {
+  .wide-paper-row { min-width: 0 !important; width: 100%; }
+  .subcategory-grid .wide-paper-row {
+    grid-template-columns: minmax(0, 1.55fr) minmax(43px, .68fr) minmax(35px, .48fr) 50px;
+    gap: 3px;
+  }
+  .app-shell.view-only .wide-paper-row {
+    grid-template-columns: minmax(0, 1.55fr) minmax(43px, .68fr) minmax(35px, .48fr);
+  }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  .wide-paper-row { min-width: 0; }
+}
