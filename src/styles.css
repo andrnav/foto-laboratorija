@@ -340,3 +340,34 @@
 .roll-level small{font-size:10px;font-weight:800;color:#24683e;white-space:nowrap}
 @media(max-width:1200px){.wide-paper-row{grid-template-columns:minmax(100px,1fr) minmax(90px,.7fr) minmax(170px,1fr) 80px}.wide-paper-stock{gap:7px}.roll-track{max-width:58px}}
 @media(max-width:760px){.top-meta{display:flex;align-items:center;justify-content:flex-end;gap:0}.top-meta .updated,.top-meta .date-meta{display:none}.refresh-top-button{min-height:34px;padding:0 9px;font-size:10px}.wide-paper-row{min-width:570px}.wide-paper-stock{gap:8px}.roll-track{height:11px;min-width:20px}}
+
+/* Responsive fixes: tablet clock layout and mobile last-updated visibility. */
+@media (min-width: 761px) and (max-width: 1200px) {
+  .topbar { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .top-meta { display: flex; flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 10px; min-width: 0; }
+  .top-meta .updated { display: flex; min-width: 0; }
+  .date-meta { flex: 1 1 300px; max-width: 100%; width: auto; min-width: 0; }
+  .clock-date-copy { flex: 1 1 auto; min-width: 0; }
+  .clock-date-copy b, .clock-date-copy small { white-space: normal; }
+  .clock-time { flex: 0 1 auto; font-size: clamp(20px, 2.4vw, 27px); }
+}
+@media (max-width: 760px) {
+  .topbar { flex-wrap: wrap; }
+  .top-meta { display: flex !important; flex: 1 1 100%; width: 100%; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 9px; }
+  .top-meta .updated { display: flex !important; min-height: 34px; gap: 7px; }
+  .top-meta .updated > svg { width: 19px; height: 19px; }
+  .top-meta .updated small { font-size: 10px; }
+  .top-meta .updated b { font-size: 11px; white-space: normal; }
+  .top-meta .date-meta { display: none !important; }
+  .refresh-top-button { min-height: 34px; }
+}
+/* View-only visitors should not see empty action columns or action labels. */
+.app-shell.view-only .paper-head .actions-head,
+.app-shell.view-only .paper-row .row-actions,
+.app-shell.view-only .generic-table .table-head > span:last-child,
+.app-shell.view-only .generic-row .row-actions { display: none !important; }
+.app-shell.view-only .paper-head { grid-template-columns: minmax(75px,.7fr) minmax(65px,.6fr) minmax(90px,.8fr) minmax(90px,.8fr); }
+.app-shell.view-only .paper-row { grid-template-columns: minmax(65px,.6fr) minmax(90px,.8fr) minmax(90px,.8fr); }
+.app-shell.view-only .generic-table .table-head,
+.app-shell.view-only .generic-row { grid-template-columns: minmax(120px,1.35fr) minmax(100px,.8fr) minmax(100px,.85fr); }
+.app-shell.view-only .wide-paper-row { grid-template-columns: minmax(120px,1fr) minmax(100px,.7fr) minmax(190px,1fr); }
