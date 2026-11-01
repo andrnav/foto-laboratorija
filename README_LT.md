@@ -13,3 +13,11 @@ Jei kamera atpažįsta QR kodą, bet likutis nepasikeičia, Supabase SQL Editor 
 - Svarbu: reikia iš naujo atsispausdinti QR etiketes, nes senose etiketėse užkoduotas tik prekės kodas, o ne svetainės nuoroda.
 - Telefonas turi atidaryti tą pačią naršyklę, kurioje administratorius jau prisijungęs. Jei kamera atidaro kitą naršyklę arba kitame telefone nėra administratoriaus sesijos, sistema atmes nuskaitymą.
 - QR etiketę generuokite jau paskelbtoje svetainėje, kad nuorodoje būtų tikras svetainės domenas, o ne `localhost`.
+
+## 2026-11 atnaujinimas: darbuotojo paskyra
+
+- Darbuotojas gali koreguoti likučius ir naudoti QR nuskaitymą.
+- Darbuotojas negali pridėti prekių, keisti prekės informacijos, spausdinti QR etikečių ar ištrinti pozicijų. Prekių pridėjimas ir trynimas lieka administratoriaus teisėmis.
+- Esamai Supabase duomenų bazei reikia paleisti `supabase/migration_2026_11_employee_role.sql` per Supabase Dashboard → SQL Editor.
+- Prieš paleisdami SQL, Supabase Dashboard → Authentication → Users sukurkite naudotoją `darbuotojas@darbuotojas.lt` ir nustatykite jam slaptažodį. Migracija automatiškai priskirs darbuotojo rolę, jei ši paskyra jau egzistuoja.
+- Darbuotojo rolė laikoma `employees` lentelėje. Teisės tikrinamos ir duomenų bazėje, ne vien paslepiant mygtukus programos sąsajoje.

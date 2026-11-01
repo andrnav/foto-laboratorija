@@ -7,6 +7,11 @@ create table if not exists public.admins (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.employees (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   category text not null check (category in ('photo','wide','sublimation','framing','other')),
@@ -58,12 +63,25 @@ as $$
   select exists (select 1 from public.admins where user_id = auth.uid());
 $$;
 
+create or replace function public.is_employee()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.is_admin() or exists (select 1 from public.employees where user_id = auth.uid());
+$$;
+
 alter table public.admins enable row level security;
+alter table public.employees enable row level security;
 alter table public.products enable row level security;
 alter table public.stock_logs enable row level security;
 
 drop policy if exists "admins can view own admin row" on public.admins;
 create policy "admins can view own admin row" on public.admins for select to authenticated using (user_id = auth.uid());
+drop policy if exists "employees can view own employee row" on public.employees;
+create policy "employees can view own employee row" on public.employees for select to authenticated using (user_id = auth.uid());
 
 drop policy if exists "products are public read" on public.products;
 create policy "products are public read" on public.products for select to anon, authenticated using (true);
@@ -90,8 +108,8 @@ declare
   before_qty numeric(10,2);
   shown_name text;
 begin
-  if not public.is_admin() then
-    raise exception 'QR nuskaitymui ir likučių keitimui reikia administratoriaus teisių.';
+  if not public.is_employee() then
+    raise exception 'QR nuskaitymui ir likučių keitimui reikia darbuotojo arba administratoriaus teisių.';
   end if;
 
   -- Ieškome pagal tikslų kodą, bet nepaisome netyčia įvestų tarpų ir raidžių dydžio.
@@ -139,7 +157,7 @@ declare
   before_qty numeric(10,2);
   reason_text text;
 begin
-  if not public.is_admin() then raise exception 'Tik administratorius gali keisti likučius.'; end if;
+  if not public.is_employee() then raise exception 'Tik darbuotojas arba administratorius gali keisti likučius.'; end if;
   if p_new_quantity is null or p_new_quantity < 0 then raise exception 'Likutis negali būti neigiamas.'; end if;
   select * into p from public.products where id = p_product_id for update;
   if not found then raise exception 'Prekė nerasta.'; end if;
