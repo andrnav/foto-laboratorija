@@ -325,3 +325,18 @@
   .chem-row .tank-bar-large { width: 105px; max-width: 105px; }
   .chem-row .tank-bar-small { width: 97px; max-width: 97px; }
 }
+
+/* Naujas viršutinis atnaujinimo mygtukas ir rulonų likučio vizualizacija */
+.refresh-top-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 13px;border:1px solid #cfe5d5;border-radius:11px;background:#fff;color:#08783e;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 2px 5px rgba(22,70,38,.04)}
+.refresh-top-button:hover{background:#eff9f1;border-color:#9fd2ad}
+.top-meta{gap:14px}
+.wide-paper-row{grid-template-columns:minmax(120px,1fr) minmax(100px,.7fr) minmax(190px,1fr) 100px}
+.wide-paper-stock{display:flex;align-items:center;gap:12px;min-width:0}
+.roll-level{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.roll-bars{display:flex;align-items:center;gap:5px;min-width:0;flex:1}
+.roll-track{display:block;position:relative;height:13px;min-width:24px;max-width:76px;flex:1;overflow:hidden;border:1px solid #b7d8c0;border-radius:4px;background:#edf5ef;box-shadow:inset 0 1px 2px rgba(19,75,37,.05)}
+.roll-track i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#2aab60,#78d58f);transition:width .2s ease}
+.roll-bars>b{font-size:10px;color:#567563;white-space:nowrap}
+.roll-level small{font-size:10px;font-weight:800;color:#24683e;white-space:nowrap}
+@media(max-width:1200px){.wide-paper-row{grid-template-columns:minmax(100px,1fr) minmax(90px,.7fr) minmax(170px,1fr) 80px}.wide-paper-stock{gap:7px}.roll-track{max-width:58px}}
+@media(max-width:760px){.top-meta{display:flex;align-items:center;justify-content:flex-end;gap:0}.top-meta .updated,.top-meta .date-meta{display:none}.refresh-top-button{min-height:34px;padding:0 9px;font-size:10px}.wide-paper-row{min-width:570px}.wide-paper-stock{gap:8px}.roll-track{height:11px;min-width:20px}}
