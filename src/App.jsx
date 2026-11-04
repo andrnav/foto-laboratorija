@@ -23,7 +23,7 @@ const NAV = [
 ];
 const SUBCATEGORY_LABELS = Object.fromEntries(NAV.flatMap(n => n.sections.map(s => [`${n.id}:${s.id}`, s.label])));
 function subcategoryLabel(category, subcategory) { return SUBCATEGORY_LABELS[`${category}:${subcategory || "other"}`] || "Kita"; }
-const CHEMICAL_COLORS = { "CD Developer": "blue", "BF Bleach Fix": "red", "STB Super Stabilizer": "yellow" };
+const CHEMICAL_COLORS = { "CD Developer": "blue", "BF Bleach Fix": "red", "BF Bleach Fix A": "red", "BF Bleach Fix B": "red", "STB Super Stabilizer": "yellow" };
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
   {name:"Žalia",value:"#e3f5e7"},{name:"Mėlyna",value:"#e2efff"},{name:"Geltona",value:"#fff4cc"},
@@ -405,7 +405,7 @@ export default function App() {
               {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"} small={p.name==="STB Super Stabilizer"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
-            <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
+            <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
           </section>
         </div>
         <section className="panel category-panel photo-other-panel">
