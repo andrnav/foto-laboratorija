@@ -25,22 +25,25 @@ const SUBCATEGORY_LABELS = Object.fromEntries(NAV.flatMap(n => n.sections.map(s 
 function subcategoryLabel(category, subcategory) { return SUBCATEGORY_LABELS[`${category}:${subcategory || "other"}`] || "Kita"; }
 function chemicalTone(name="") {
   const n=String(name).toLowerCase();
-  if (n.includes("developer") || n.includes("cd")) return "blue";
-  if (n.includes("bleach") || n.includes("bf")) return "red";
-  if (n.includes("stabilizer") || n.includes("stb")) return "yellow";
+  if (n.includes("developer") || /\bcd\b/.test(n)) return "blue";
+  if (n.includes("bleach") || /\bbf\b/.test(n)) return "red";
+  if (n.includes("stabilizer") || /\bstb\b/.test(n)) return "yellow";
   return "green";
 }
 const INK_ORDER = ["magenta","orange","cyan","light black","yellow","light magenta","black","light cyan"];
 function inkHex(name="") {
-  const n=String(name).toLowerCase();
-  if(n==="magenta") return "#d62978"; if(n==="orange") return "#f28c28"; if(n==="cyan") return "#00a6d6";
-  if(n==="light black") return "#8b9299"; if(n==="yellow") return "#f2d21b"; if(n==="light magenta") return "#ed9ac0";
-  if(n==="black") return "#252525"; if(n==="light cyan") return "#8bd8e8"; return "#a0a0a0";
+  const n=String(name).toLowerCase().replace(/[_-]+/g," ").trim();
+  const colors={magenta:"#d62978",orange:"#f28c28",cyan:"#00a6d6","light black":"#8b9299",yellow:"#f2d21b","light magenta":"#ed9ac0",black:"#252525","light cyan":"#8bd8e8"};
+  return colors[n] || "#a0a0a0";
 }
 function inkSortKey(p) {
   const n=String(p.name||"").toLowerCase().replace(/[_-]+/g," ").trim();
   const i=INK_ORDER.indexOf(n);
   return i < 0 ? 100 : i;
+}
+function productDescription(p) { return p.description ? <small style={{display:"block",fontSize:"11px",fontWeight:400,opacity:.62,marginTop:2}}>{p.description}</small> : null; }
+function ProductName({p,showUnit=true}) {
+  return <div>{p.kind==="ink"&&<span aria-hidden="true" style={{display:"inline-block",width:9,height:9,borderRadius:"50%",background:inkHex(p.name),marginRight:8,verticalAlign:"middle",border:"1px solid #0002"}}/>}<b>{displayName(p)}</b>{productDescription(p)}{showUnit&&<small style={{display:"block"}}>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small>}</div>;
 }
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
@@ -253,7 +256,7 @@ export default function App() {
     if (details) {
       const { error: detailsError } = await supabase.from("products").update({
         min_quantity: Number(details.min_quantity), code: details.code.trim() || null,
-        color: details.color || null
+        color: details.color || null, description: details.description || null, tank_size: details.tank_size || "large"
       }).eq("id", product.id);
       if (detailsError) { setBusy(false); flash(`Prekės duomenų išsaugoti nepavyko: ${detailsError.message}`); return; }
     }
@@ -274,6 +277,7 @@ export default function App() {
       width_cm: values.kind === "paper" ? Number(values.width_cm) : null,
       code: values.code.trim() || null, quantity: Number(values.quantity), min_quantity: Number(values.min_quantity),
       color: values.kind === "paper" || values.kind === "chemical" ? null : (values.color || null),
+      description: values.description?.trim() || null, tank_size: values.kind === "chemical" ? (values.tank_size || "large") : "large",
       unit: values.kind === "paper" ? "vnt." : (values.unit || "bak.")
     };
     const { error } = await supabase.from("products").insert(row);
@@ -420,7 +424,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Foto chemija</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=>{const tone=chemicalTone(p.name);return <div className="chem-row" key={p.id}><div className={`chem-dot ${tone}`}></div><div className="chem-name"><b>{p.name}</b>{p.description&&<small className="product-description" style={{display:"block",fontSize:"0.82em",fontWeight:400,opacity:0.62,marginTop:2}}>{p.description}</small>}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={tone} small={(p.tank_size||"large")==="small"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>})}
+              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name"><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><span className="form-note" style={{fontSize:10,whiteSpace:"nowrap"}}>{p.tank_size==="small"?"Mažas":"Didelis"}</span><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -429,7 +433,7 @@ export default function App() {
         <section className="panel category-panel photo-other-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>Kita</h2><p>Kitos foto laboratorijos medžiagos</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:"other",kind:"item"})}><Plus size={16}/> Pridėti</button>}</div>
           <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><div><b>{displayName(p)}</b><small>{p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
             {!categoryProducts.some(p=>(p.subcategory||"other")==="other")&&<div className="empty-state">Kitos foto medžiagos bus rodomos čia.</div>}
           </div>
         </section>
@@ -439,7 +443,7 @@ export default function App() {
           const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort((a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><div className="generic-product-name">{p.kind==="ink"&&<span className="ink-color-dot" style={{backgroundColor:inkHex(p.name),display:"inline-block",width:10,height:10,minWidth:10,borderRadius:"50%",marginRight:8,verticalAlign:"middle"}} title={p.name}/>}<b>{displayName(p)}</b>{p.description&&<small className="product-description" style={{display:"block",fontSize:"0.82em",fontWeight:400,opacity:0.62,marginTop:2}}>{p.description}</small>}<small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
@@ -484,7 +488,7 @@ function CopyCode({code,flash}) {
   return <button className="code-copy" onClick={copy} title="Kopijuoti prekės kodą"><span>{code}</span>{copied?<Check size={15}/>:<Copy size={15}/>}</button>;
 }
 function ProductRow({p,canManageStock,onAdjust,flash}) {
-  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
+  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:10,fontWeight:400,opacity:.65}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
@@ -510,14 +514,16 @@ function LoginForm({onSubmit,busy}) {
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit(email,password)}}><label>El. paštas<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@imone.lt"/></label><label>Slaptažodis<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary-button" disabled={busy}>{busy?"Jungiamasi…":"Prisijungti"}</button><p className="form-note">Darbuotojai gali keisti likučius ir naudoti QR nuskaitymą. Prekių pridėjimas ir trynimas prieinamas tik administratoriui.</p></form>;
 }
 function ProductForm({category,kind:forcedKind,subcategory:forcedSubcategory,onSubmit,busy}) {
-  const [cat,setCat]=useState(category||"photo");const [subcategory,setSubcategory]=useState(forcedSubcategory || (forcedKind==="paper"?"paper":forcedKind==="chemical"?"chemical":"other"));const [kind,setKind]=useState(forcedKind||"item");const [name,setName]=useState("");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState("bak.");const [color,setColor]=useState("");const [description,setDescription]=useState("");const [tankSize,setTankSize]=useState("large");
+  const [cat,setCat]=useState(category||"photo");const [subcategory,setSubcategory]=useState(forcedSubcategory || (forcedKind==="paper"?"paper":forcedKind==="chemical"?"chemical":"other"));const [kind,setKind]=useState(forcedKind||(forcedSubcategory==="chemical"?"chemical":forcedSubcategory==="ink"?"ink":forcedSubcategory==="paper"?"paper":"item"));const [name,setName]=useState("");const [description,setDescription]=useState("");const [tankSize,setTankSize]=useState("large");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState(forcedSubcategory==="ink"?"%":"bak.");const [color,setColor]=useState("");
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit({category:cat,subcategory,kind,name:kind==="paper"?surface:name,surface,width_cm:width,code,quantity:qty,min_quantity:min,unit,color,description,tank_size:tankSize})}}>
     <label>Kategorija<select value={cat} onChange={e=>{const next=NAV.find(n=>n.id===e.target.value);setCat(e.target.value);const first=next?.sections[0]?.id||"other";setSubcategory(first);setKind(e.target.value==="photo"&&first==="paper"?"paper":e.target.value==="photo"&&first==="chemical"?"chemical":first==="ink"?"ink":"item");}}>{NAV.map(n=><option value={n.id} key={n.id}>{n.label}</option>)}</select></label>
-    <label>Medžiagų kategorija<select value={subcategory} onChange={e=>{setSubcategory(e.target.value);if(cat==="photo"&&e.target.value==="paper")setKind("paper");else if(cat==="photo"&&e.target.value==="chemical")setKind("chemical");else setKind(e.target.value==="ink"?"ink":"item");if(e.target.value==="ink")setUnit("%");}}>{(NAV.find(n=>n.id===cat)?.sections||[]).map(section=><option value={section.id} key={section.id}>{section.label}</option>)}</select></label>
+    <label>Medžiagų kategorija<select value={subcategory} onChange={e=>{setSubcategory(e.target.value);if(cat==="photo"&&e.target.value==="paper")setKind("paper");else if(cat==="photo"&&e.target.value==="chemical")setKind("chemical");else setKind(e.target.value==="ink"?"ink":"item");if(e.target.value==="ink"){setUnit("%");setCat("wide");}}}>{(NAV.find(n=>n.id===cat)?.sections||[]).map(section=><option value={section.id} key={section.id}>{section.label}</option>)}</select></label>
     {kind==="paper"?<><label>Paviršius<select value={surface} onChange={e=>setSurface(e.target.value)}><option>Glossy</option><option>Lustre</option><option>Silk</option></select></label><label>Plotis<select value={width} onChange={e=>setWidth(e.target.value)}><option value="12.7">12,7 cm</option><option value="15.2">15,2 cm</option><option value="30.5">30,5 cm</option></select></label></>:<><label>Prekės pavadinimas<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Pvz., papildoma chemija"/></label><label>Matavimo vienetas<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="bak.">bak.</option><option value="vnt.">vnt.</option><option value="l">l</option><option value="kg">kg</option><option value="pak.">pak.</option><option value="rul.">rulonas</option><option value="%">%</option></select></label></>}
-    <label>Aprašymas (nebūtina)<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Pvz., XXL spaudos popierius"/></label>{kind==="chemical"&&<label>Talpos dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}<label>Prekės kodas (nebūtina)<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Jei yra, įveskite prekės kodą"/></label>
+    <label>Aprašymas (nebūtina)<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Pvz., XXL spaudos popierius"/></label>
+    {kind==="chemical"&&<label>Bako dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}
+    <label>Prekės kodas (nebūtina)<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Jei yra, įveskite prekės kodą"/></label>
     {kind!=="paper"&&kind!=="chemical"&&<label>Prekės spalva<select value={color} onChange={e=>setColor(e.target.value)}><option value="">Be spalvos</option>{PRODUCT_PALETTE.map(c=><option value={c.value} key={c.value}>{c.name}</option>)}</select></label>}
-    <div className="form-two"><label>{kind==="ink"?"Dabartinis lygis (%)":"Dabartinis likutis"}<input type="number" required min="0" max={undefined} step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{kind==="ink"?"Minimalus lygis (%)":"Minimalus likutis"}<input type="number" required min="0" max={undefined} step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={min} onChange={e=>setMin(e.target.value)}/></label></div>
+    <div className="form-two"><label>{kind==="ink"?"Dabartinis lygis (%)":"Dabartinis likutis"}<input type="number" required min="0" step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{kind==="ink"?"Minimalus lygis (%)":"Minimalus likutis"}<input type="number" required min="0" step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={min} onChange={e=>setMin(e.target.value)}/></label></div>
     <button className="primary-button" disabled={busy}>{busy?"Saugoma…":"Pridėti prekę"}</button><p className="form-note">Prekės kodas neprivalomas. Jei jį įvesite, jis turi būti unikalus. QR nuskaitymas veikia prekėms, turinčioms kodą.</p>
   </form>;
 }
@@ -526,20 +532,19 @@ function AdjustForm({products,initialProduct,mode:initialMode,isAdmin,onSubmit,b
   const [id,setId]=useState(initialProduct?.id||"");const product=products.find(p=>String(p.id)===String(id));
   const [amount,setAmount]=useState((initialMode||"add")==="set"?String(initialProduct?.quantity??0):"1");
   const [reason,setReason]=useState((initialMode||"add")==="add"?"Papildymas":(initialMode||"add")==="remove"?"Paėmimas":"Likučio perskaičiavimas");
-  const [minQty,setMinQty]=useState(String(initialProduct?.min_quantity??0));
-  const [code,setCode]=useState(initialProduct?.code||"");
-  const [color,setColor]=useState(initialProduct?.color||"");const [description,setDescription]=useState(initialProduct?.description||"");const [tankSize,setTankSize]=useState(initialProduct?.tank_size||"large");
+  const [minQty,setMinQty]=useState(String(initialProduct?.min_quantity??0));const [code,setCode]=useState(initialProduct?.code||"");const [color,setColor]=useState(initialProduct?.color||"");
+  const [description,setDescription]=useState(initialProduct?.description||"");const [tankSize,setTankSize]=useState(initialProduct?.tank_size||"large");
   function selectProduct(nextId){const p=products.find(x=>String(x.id)===nextId);setId(nextId);setAmount(mode==="set"?String(p?.quantity??0):"1");setMinQty(String(p?.min_quantity??0));setCode(p?.code||"");setColor(p?.color||"");setDescription(p?.description||"");setTankSize(p?.tank_size||"large");}
   function changeMode(next){setMode(next);setAmount(next==="set"?String(product?.quantity??0):"1");setReason(next==="add"?"Papildymas":next==="remove"?"Paėmimas":"Likučio perskaičiavimas");}
   const after=product?(mode==="set"?Number(amount):Number(product.quantity)+(mode==="remove"?-1:1)*Number(amount)):0;
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();if(!product)return;const n=Number(amount);const delta=mode==="add"?n:mode==="remove"?-n:n;onSubmit(product,delta,reason,mode==="set",isAdmin&&mode==="set"?{min_quantity:minQty,code,color,description,tank_size:tankSize}:null)}}>
     <div className="adjust-mode-switch" role="group" aria-label="Likučio veiksmas"><button type="button" className={mode==="add"?"active":""} onClick={()=>changeMode("add")}><Plus size={15}/> Pridėti</button><button type="button" className={mode==="remove"?"active":""} onClick={()=>changeMode("remove")}><Minus size={15}/> Atimti</button><button type="button" className={mode==="set"?"active":""} onClick={()=>changeMode("set")}><Pencil size={15}/> Koreguoti</button></div>
     <label>Prekė<select required value={id} onChange={e=>selectProduct(e.target.value)}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code||"Be kodo"} ({fmt(p.quantity)}{p.kind==="ink"?"%":""})</option>)}</select></label>
-    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" max={undefined} step={product?.kind==="ink"?1:product?.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" step={product?.kind==="ink"?1:product?.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
     {isAdmin&&mode==="set"&&product&&<>
-      <label>Aprašymas<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Papildomas prekės aprašymas"/></label>
-      {product.kind==="chemical"&&<label>Talpos dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}
       <div className="form-two"><label>Minimalus likutis<input type="number" required min="0" step={product.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={minQty} onChange={e=>setMinQty(e.target.value)}/></label><label>Prekės kodas (nebūtina)<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Be kodo"/></label></div>
+      <label>Aprašymas (nebūtina)<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Pvz., XXL spaudos popierius"/></label>
+      {product.kind==="chemical"&&<label>Bako dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}
       {product.kind!=="paper"&&product.kind!=="chemical"&&<label>Prekės spalva<select value={color} onChange={e=>setColor(e.target.value)}><option value="">Be spalvos</option>{PRODUCT_PALETTE.map(c=><option value={c.value} key={c.value}>{c.name}</option>)}</select></label>}
     </>}
     <label>Priežastis<select value={reason} onChange={e=>setReason(e.target.value)}><option>Papildymas</option><option>Paėmimas</option><option>QR nuskaitymas praleistas</option><option>Likučio perskaičiavimas</option><option>Brokuota / sugadinta</option><option>Kita</option></select></label>
