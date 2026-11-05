@@ -381,6 +381,7 @@ export default function App() {
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
     <style>{`
 /* Kompaktiškas likučio vaizdas: skaičius pirmas, be pasikartojančio „DABAR“. */
+.stock-unused{display:inline-block!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#718078!important;font-size:13px!important;font-weight:600!important;white-space:nowrap!important}
 .stock-badge{display:inline-flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;min-width:0!important;width:max-content!important;max-width:100%!important;padding:6px 9px!important;border:1px solid #dfe7e1!important;border-left:3px solid #78a98a!important;border-radius:7px!important;background:#f5f7f5!important;box-shadow:none!important;white-space:nowrap!important;color:#263b2d!important}
 .stock-badge strong{font-size:15px!important;line-height:1.15!important;font-weight:750!important;color:#203b2b!important}
 .stock-badge span{font-size:10px!important;line-height:1.15!important;color:#66776c!important;opacity:1!important}
@@ -574,7 +575,7 @@ export default function App() {
   </div>;
 }
 
-function StockBadge({p}) { const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
+function StockBadge({p}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper" || p.kind === "chemical" || !p.color) return undefined;
   return { backgroundColor: p.color, borderLeft: "3px solid #789985" };
