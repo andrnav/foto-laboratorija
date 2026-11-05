@@ -48,7 +48,7 @@ function inkSortKey(p) {
 }
 function productDescription(p) { return p.description ? <small className="product-description" style={{display:"block",fontSize:"12px",fontWeight:500,color:"#65776c",opacity:1,marginTop:3,lineHeight:1.25}}>{p.description}</small> : null; }
 function ProductName({p}) {
-  return <div>{isInkProduct(p)&&<span aria-hidden="true" style={{display:"inline-block",width:17,height:17,minWidth:17,borderRadius:"50%",background:inkHex(p.name),marginRight:10,verticalAlign:"middle",border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}</div>;
+  return <div>{isInkProduct(p)&&<span aria-hidden="true" style={{display:"inline-block",width:27,height:27,minWidth:27,borderRadius:"7px",background:inkHex(p.name),marginRight:11,verticalAlign:"middle",border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}</div>;
 }
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
@@ -392,7 +392,21 @@ export default function App() {
 .order-item>div:nth-child(2)>b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
 .order-item .stock-badge{justify-self:end!important}
 .order-item .code-copy,.order-item .code-no-code{margin-top:3px!important}
-.order-list{gap:5px!important}
+ .order-list{gap:5px!important}
+/* Tarpinis ekrano plotis: nebespaudžiame dviejų lentelių į ankštas kolonas. */
+@media (min-width:761px) and (max-width:1250px){
+  .subcategory-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px!important}
+  .subcategory-block{min-width:0!important;width:100%!important}
+  .generic-row{grid-template-columns:minmax(180px,1fr) minmax(105px,145px) 116px 64px!important;gap:10px!important}
+  .generic-row>:first-child{min-width:0!important}
+  .generic-row>:first-child b{overflow-wrap:break-word!important;word-break:normal!important}
+  .generic-row .code-copy{white-space:nowrap!important;max-width:100%!important}
+}
+/* Rašalo spalva turi būti lengvai atpažįstama ir iš pirmo žvilgsnio. */
+.product-description{color:#455b4d!important;font-weight:600!important;opacity:1!important}
+.surface-label{font-size:25px!important;font-weight:800!important;letter-spacing:-.3px!important}
+.surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
+.surface-rows{padding-bottom:3px!important}
 @media(max-width:760px){
 .chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:5px 8px!important;padding:9px 7px!important;align-items:center!important}
 .chem-row>.chem-dot{grid-column:1;grid-row:1 / span 3;align-self:start;margin-top:4px}
