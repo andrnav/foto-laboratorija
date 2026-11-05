@@ -37,7 +37,7 @@ function normalizedInkName(name="") {
 }
 function inkHex(name="") {
   const n=normalizedInkName(name);
-  const colors={magenta:"#d62978",orange:"#f28c28",cyan:"#00a6d6","light black":"#8b9299",yellow:"#f2d21b","light magenta":"#ed9ac0",black:"#252525","light cyan":"#8bd8e8"};
+  const colors={magenta:"#d62978",orange:"#f28c28",cyan:"#00a6d6","light black":"#8b9299",yellow:"#f2d21b","light magenta":"#f7bfd5",black:"#252525","light cyan":"#b9eaf5"};
   return colors[n] || "#a0a0a0";
 }
 function isInkProduct(p) { return p.kind==="ink" || p.subcategory==="ink" || (p.category==="wide" && INK_ORDER.some(c=>normalizedInkName(p.name)===c)); }
@@ -90,9 +90,15 @@ function displayName(p) { return p.kind === "paper" ? `${p.surface} ${String(p.w
 function chemicalSortKey(name="") {
   const n=name.toLowerCase();
   if (n.includes("cd") || n.includes("developer")) return 0;
-  if (n.includes("bf") || n.includes("bleach fix")) return 1;
-  if (n.includes("stb") || n.includes("stabilizer")) return 2;
-  return 3;
+  if (n.includes("bf") || n.includes("bleach fix")) {
+    // A+B pakuotė rodoma po atskirų A ir B pozicijų.
+    if (n.includes("a+b") || n.includes("a + b") || n.includes("a ir b")) return 2;
+    if (n.includes("bleach fix b")) return 1;
+    if (n.includes("bleach fix a")) return 0.5;
+    return 1.5;
+  }
+  if (n.includes("stb") || n.includes("stabilizer")) return 3;
+  return 4;
 }
 
 function categoryLastUpdated(products, logs, active) {
