@@ -49,7 +49,7 @@ function inkSortKey(p) {
 }
 function productDescription(p) { return p.description ? <small className="product-description" style={{display:"block",fontSize:"12px",fontWeight:500,color:"#65776c",opacity:1,marginTop:3,lineHeight:1.25}}>{p.description}</small> : null; }
 function ProductName({p}) {
-  return <div>{isInkProduct(p)&&<span aria-hidden="true" style={{display:"inline-block",width:34,height:25,minWidth:34,borderRadius:"6px",background:inkHex(p.name),marginRight:11,verticalAlign:"middle",border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}</div>;
+  return <div className={isInkProduct(p) ? "ink-product-name" : undefined}>{isInkProduct(p)&&<span className="ink-color-swatch" aria-hidden="true" style={{display:"inline-block",width:34,height:25,minWidth:34,borderRadius:"6px",background:inkHex(p.name),border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}</div>;
 }
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
@@ -409,13 +409,17 @@ export default function App() {
   .generic-row>:first-child b{overflow-wrap:break-word!important;word-break:normal!important}
   .generic-row .code-copy{white-space:nowrap!important;max-width:100%!important}
 }
+/* Rašalo eilutėje spalvos žymeklis ir pavadinimas visada vienoje eilėje. */
+.ink-product-name{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important;white-space:nowrap!important}
+.ink-product-name>b{display:block!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;font-size:clamp(12px,1.15vw,16px)!important;line-height:1.15!important;min-width:0!important}
+.ink-product-name .ink-color-swatch{flex:0 0 34px!important;margin:0!important}
 /* Rašalo spalva turi būti lengvai atpažįstama ir iš pirmo žvilgsnio. */
 .product-description{color:#455b4d!important;font-weight:600!important;opacity:1!important}
 .surface-label{font-size:25px!important;font-weight:800!important;letter-spacing:-.3px!important;box-sizing:border-box!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-align:center!important;overflow-wrap:anywhere!important}
 .surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
 .surface-rows{padding-bottom:3px!important}
 @media(max-width:760px){
-.surface-label{font-size:clamp(14px,4.5vw,19px)!important;line-height:1.1!important;padding:8px 4px!important;white-space:normal!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow-wrap:anywhere!important;letter-spacing:-.2px!important}
+.surface-label{font-size:clamp(11px,4vw,17px)!important;line-height:1.1!important;padding:8px 3px!important;white-space:nowrap!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;overflow-wrap:normal!important;word-break:keep-all!important;letter-spacing:-.2px!important}
 .surface-group,.surface-rows,.paper-table{min-width:0!important;max-width:100%!important}
 .chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:5px 8px!important;padding:9px 7px!important;align-items:center!important}
 .chem-row>.chem-dot{grid-column:1;grid-row:1 / span 3;align-self:start;margin-top:4px}
@@ -428,7 +432,7 @@ export default function App() {
 .order-item{grid-template-columns:6px minmax(0,1fr) max-content!important;gap:9px!important;padding:8px 7px!important}
 .order-item>div:nth-child(2){width:min(48vw,320px)!important}.order-item .stock-badge{padding:5px 7px!important}
 .order-item>div:nth-child(2)>b{font-size:13px!important}
-.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
+.ink-product-name{gap:7px!important}.ink-product-name>b{font-size:clamp(11px,3.7vw,14px)!important;white-space:nowrap!important}.ink-product-name .ink-color-swatch{width:32px!important;min-width:32px!important;height:24px!important;flex-basis:32px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
 `}</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
