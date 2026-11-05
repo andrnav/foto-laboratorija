@@ -419,6 +419,10 @@ export default function App() {
 .surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
 .surface-rows{padding-bottom:3px!important}
 @media(max-width:760px){
+/* Mobiliajame vaizde grąžiname koregavimo veiksmus foto popieriui ir chemijai. */
+.paper-row .row-actions{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;position:relative!important;z-index:2!important;}
+.paper-row .row-actions .row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;flex:0 0 30px!important;width:30px!important;height:30px!important;min-width:30px!important;padding:5px!important;align-items:center!important;justify-content:center!important;}
+.chem-row>.row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:2!important;width:30px!important;height:30px!important;min-width:30px!important;padding:5px!important;align-items:center!important;justify-content:center!important;}
 .surface-label{font-size:clamp(11px,4vw,17px)!important;line-height:1.1!important;padding:8px 3px!important;white-space:nowrap!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;overflow-wrap:normal!important;word-break:keep-all!important;letter-spacing:-.2px!important}
 .surface-group,.surface-rows,.paper-table{min-width:0!important;max-width:100%!important}
 .chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:5px 8px!important;padding:9px 7px!important;align-items:center!important}
