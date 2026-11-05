@@ -438,7 +438,34 @@ export default function App() {
 .order-item>div:nth-child(2)>b{font-size:13px!important}
 .ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
-`}</style>
+`}
+/* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
+@media(max-width:760px){
+  .surface-group{display:block!important;width:100%!important;min-width:0!important;margin:0 0 12px!important;}
+  .surface-label{position:relative!important;display:flex!important;width:100%!important;height:auto!important;min-height:38px!important;margin:0 0 7px!important;padding:8px 12px!important;border-radius:10px!important;font-size:clamp(15px,4.2vw,18px)!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;justify-content:flex-start!important;text-align:left!important;}
+  .surface-rows{display:flex!important;flex-direction:column!important;gap:8px!important;width:100%!important;min-width:0!important;}
+  /* Foto popierius: mobiliajame paliekamas tik redagavimas, iškart prie likučio. */
+  .surface-rows .paper-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto 34px!important;grid-template-rows:auto auto!important;grid-template-areas:"width stock actions" "code code code"!important;align-items:center!important;column-gap:7px!important;row-gap:5px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:9px 8px!important;border:1px solid #e4ebe6!important;border-radius:10px!important;background:#fff!important;overflow:hidden!important;}
+  .paper-row .paper-width{grid-area:width!important;min-width:0!important;font-size:14px!important;font-weight:700!important;line-height:1.2!important;white-space:nowrap!important;}
+  .paper-row .code-copy,.paper-row .code-no-code{grid-area:code!important;justify-self:start!important;min-width:0!important;max-width:100%!important;font-size:12px!important;white-space:nowrap!important;}
+  .paper-row .stock-badge{grid-area:stock!important;justify-self:end!important;align-self:center!important;max-width:100%!important;white-space:nowrap!important;}
+  .paper-row .row-actions{grid-area:actions!important;display:flex!important;position:static!important;z-index:1!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;justify-content:flex-end!important;align-items:center!important;gap:0!important;width:34px!important;margin:0!important;padding:0!important;}
+  .paper-row .row-actions .row-action{display:none!important;}
+  .paper-row .row-actions .row-action:last-child{position:static!important;display:inline-flex!important;flex:0 0 32px!important;width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;padding:5px!important;}
+  /* Chemija: likutis ir vienintelis redagavimo mygtukas vienoje eilėje; kodas ir bakai žemiau. */
+  .chem-list{display:flex!important;flex-direction:column!important;gap:7px!important;min-width:0!important;}
+  .chem-row{display:grid!important;grid-template-columns:9px minmax(0,1fr) auto 34px!important;grid-template-rows:auto auto auto!important;gap:5px 7px!important;align-items:center!important;padding:9px 8px!important;border:1px solid #e4ebe6!important;border-radius:10px!important;background:#fff!important;min-width:0!important;box-sizing:border-box!important;}
+  .chem-row>.chem-dot{grid-column:1!important;grid-row:1 / span 3!important;align-self:stretch!important;margin:0!important;width:8px!important;border-radius:8px!important;}
+  .chem-row>.chem-name{grid-column:2 / 5!important;grid-row:1!important;min-width:0!important;overflow:hidden!important;}
+  .chem-row>.chem-name>b{display:block!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important;overflow-wrap:anywhere!important;}
+  .chem-row>.stock-badge{grid-column:3!important;grid-row:2!important;justify-self:end!important;white-space:nowrap!important;}
+  .chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2!important;grid-row:2!important;justify-self:start!important;max-width:100%!important;font-size:12px!important;}
+  .chem-row>.row-action{grid-column:4!important;grid-row:2!important;justify-self:end!important;position:static!important;width:32px!important;height:32px!important;min-width:32px!important;padding:5px!important;}
+  .chem-row>.tank-bar{grid-column:2 / 5!important;grid-row:3!important;justify-self:start!important;margin:2px 0 0!important;transform:scale(.82)!important;transform-origin:left center!important;max-width:100%!important;}
+  .chem-legend{display:flex!important;flex-wrap:wrap!important;gap:6px 10px!important;padding:8px 4px!important;font-size:11px!important;}
+}
+
+</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       <nav className="main-nav">
