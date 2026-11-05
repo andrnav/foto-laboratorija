@@ -46,7 +46,7 @@ function inkSortKey(p) {
   const i=INK_ORDER.indexOf(n);
   return i < 0 ? 100 : i;
 }
-function productDescription(p) { return p.description ? <small style={{display:"block",fontSize:"11px",fontWeight:400,opacity:.62,marginTop:2}}>{p.description}</small> : null; }
+function productDescription(p) { return p.description ? <small className="product-description" style={{display:"block",fontSize:"12px",fontWeight:500,color:"#65776c",opacity:1,marginTop:3,lineHeight:1.25}}>{p.description}</small> : null; }
 function ProductName({p,showUnit=true}) {
   return <div>{isInkProduct(p)&&<span aria-hidden="true" style={{display:"inline-block",width:17,height:17,minWidth:17,borderRadius:"50%",background:inkHex(p.name),marginRight:10,verticalAlign:"middle",border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}{showUnit&&<small style={{display:"block"}}>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small>}</div>;
 }
@@ -394,8 +394,14 @@ export default function App() {
 .order-item .code-copy,.order-item .code-no-code{margin-top:3px!important}
 .order-list{gap:5px!important}
 @media(max-width:760px){
-.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;gap:7px 8px!important;padding:10px 7px!important;align-items:center!important}
-.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}
+.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:5px 8px!important;padding:9px 7px!important;align-items:center!important}
+.chem-row>.chem-dot{grid-column:1;grid-row:1 / span 3;align-self:start;margin-top:4px}
+.chem-row>.chem-name{grid-column:2;grid-row:1;min-width:0}
+.chem-row>.chem-name>b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.18}
+.chem-row>.stock-badge{grid-column:3;grid-row:1;justify-self:end;align-self:center;white-space:nowrap}
+.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start;font-size:12px!important}
+.chem-row>.tank-bar{grid-column:2 / 4;grid-row:3;justify-self:start;margin:2px 0 0 0;transform:scale(.88);transform-origin:left center}
+.chem-row>.row-action{grid-column:3;grid-row:2;justify-self:end}
 .order-item{grid-template-columns:6px minmax(0,1fr) minmax(98px,max-content)!important;gap:7px!important;padding:8px 7px!important}
 .order-item .stock-badge{padding:5px 7px!important}
 .order-item>div:nth-child(2)>b{font-size:13px!important}
@@ -523,7 +529,7 @@ function CopyCode({code,flash}) {
   return <button className="code-copy" onClick={copy} title="Kopijuoti prekės kodą"><span>{code}</span>{copied?<Check size={15}/>:<Copy size={15}/>}</button>;
 }
 function ProductRow({p,canManageStock,onAdjust,flash}) {
-  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:10,fontWeight:400,opacity:.65}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
+  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
