@@ -373,8 +373,24 @@ export default function App() {
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
     <style>{`
-.stock-badge{border-radius:9px!important;min-width:126px!important;padding:8px 11px!important;box-shadow:0 1px 2px #173b2410!important}.stock-badge strong{font-size:16px!important}.stock-badge span{line-height:1.2}.chem-row{border-bottom:1px solid #e2eae4}
-@media(max-width:760px){.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;gap:8px 10px!important;padding:13px 8px!important;align-items:center!important}.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.form-note{grid-column:3;grid-row:3}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}.generic-table{width:100%;overflow-x:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;padding:12px 9px!important}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:1;grid-row:3;justify-self:start}.generic-row>.row-actions{grid-column:2;grid-row:1 / span 3;align-self:center}.stock-badge{min-width:118px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}}
+/* Kompaktiškas likučio vaizdas: skaičius pirmas, be pasikartojančio „DABAR“. */
+.stock-badge{display:inline-flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;min-width:0!important;width:max-content!important;max-width:100%!important;padding:6px 9px!important;border:1px solid #dfe7e1!important;border-left:3px solid #78a98a!important;border-radius:7px!important;background:#f5f7f5!important;box-shadow:none!important;white-space:nowrap!important;color:#263b2d!important}
+.stock-badge strong{font-size:15px!important;line-height:1.15!important;font-weight:750!important;color:#203b2b!important}
+.stock-badge span{font-size:10px!important;line-height:1.15!important;color:#66776c!important;opacity:1!important}
+.stock-badge.low{background:#fff7f6!important;border-color:#f0d8d5!important;border-left-color:#d86b66!important}
+.stock-badge.low strong{color:#b83f3f!important}
+.stock-badge.low span{color:#9d6662!important}
+.stock-badge.ok{background:#f5f7f5!important}
+.generic-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(90px,120px) 116px 64px!important;gap:9px!important;align-items:center!important;padding:8px 10px!important;min-width:0!important;border-bottom:1px solid #e7ece8!important}
+.generic-row>:first-child{min-width:0!important;max-width:100%!important}
+.generic-row>:first-child b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
+.generic-row .row-actions{display:flex!important;gap:5px!important;justify-content:flex-end!important;white-space:nowrap!important}
+.chem-row{border-bottom:1px solid #e2eae4}
+@media(max-width:760px){
+.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;gap:7px 8px!important;padding:10px 7px!important;align-items:center!important}
+.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.form-note{grid-column:3;grid-row:3}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}
+.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
+}
 `}</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
@@ -485,7 +501,7 @@ export default function App() {
   </div>;
 }
 
-function StockBadge({p}) { const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`} style={{display:"inline-flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 12px",minWidth:112,whiteSpace:"nowrap"}}><span style={{fontSize:11,fontWeight:600,opacity:.78}}>DABAR</span><strong style={{fontSize:17,lineHeight:1.1}}>{fmt(p.quantity)} {unit}</strong><span style={{fontSize:11,fontWeight:600,opacity:.78}}>MIN. {fmt(p.min_quantity)} {unit}</span></span>; }
+function StockBadge({p}) { const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper" || p.kind === "chemical" || !p.color) return undefined;
   return { backgroundColor: p.color, borderLeft: "3px solid #789985" };
