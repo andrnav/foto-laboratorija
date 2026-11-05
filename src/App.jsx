@@ -33,7 +33,7 @@ function chemicalTone(name="") {
 const INK_ORDER = ["magenta","orange","cyan","light black","yellow","light magenta","black","light cyan"];
 function normalizedInkName(name="") {
   const n=String(name).toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ").trim();
-  return INK_ORDER.find(color => n===color || n.startsWith(color+" ") || n.endsWith(" "+color)) || n;
+  return INK_ORDER.find(color => n===color || n.includes(color)) || n;
 }
 function inkHex(name="") {
   const n=normalizedInkName(name);
@@ -48,7 +48,7 @@ function inkSortKey(p) {
 }
 function productDescription(p) { return p.description ? <small style={{display:"block",fontSize:"11px",fontWeight:400,opacity:.62,marginTop:2}}>{p.description}</small> : null; }
 function ProductName({p,showUnit=true}) {
-  return <div>{p.kind==="ink"&&<span aria-hidden="true" style={{display:"inline-block",width:9,height:9,borderRadius:"50%",background:inkHex(p.name),marginRight:8,verticalAlign:"middle",border:"1px solid #0002"}}/>}<b>{displayName(p)}</b>{productDescription(p)}{showUnit&&<small style={{display:"block"}}>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small>}</div>;
+  return <div>{isInkProduct(p)&&<span aria-hidden="true" style={{display:"inline-block",width:17,height:17,minWidth:17,borderRadius:"50%",background:inkHex(p.name),marginRight:10,verticalAlign:"middle",border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}{showUnit&&<small style={{display:"block"}}>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small>}</div>;
 }
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
@@ -372,6 +372,10 @@ export default function App() {
   const categoryCounts = products.reduce((a,p) => ({...a,[p.category]:(a[p.category]||0)+1}),{});
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
+    <style>{`
+.stock-badge{border-radius:9px!important;min-width:126px!important;padding:8px 11px!important;box-shadow:0 1px 2px #173b2410!important}.stock-badge strong{font-size:16px!important}.stock-badge span{line-height:1.2}.chem-row{border-bottom:1px solid #e2eae4}
+@media(max-width:760px){.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;gap:8px 10px!important;padding:13px 8px!important;align-items:center!important}.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.form-note{grid-column:3;grid-row:3}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}.generic-table{width:100%;overflow-x:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;padding:12px 9px!important}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:1;grid-row:3;justify-self:start}.generic-row>.row-actions{grid-column:2;grid-row:1 / span 3;align-self:center}.stock-badge{min-width:118px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}}
+`}</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       <nav className="main-nav">
