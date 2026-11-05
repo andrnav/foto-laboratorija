@@ -386,9 +386,19 @@ export default function App() {
 .generic-row>:first-child b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
 .generic-row .row-actions{display:flex!important;gap:5px!important;justify-content:flex-end!important;white-space:nowrap!important}
 .chem-row{border-bottom:1px solid #e2eae4}
+/* Užsakomų medžiagų eilutė: pavadinimas ir likutis arčiau, be tuščios juostos. */
+.order-item{display:grid!important;grid-template-columns:7px minmax(0,1fr) minmax(112px,max-content)!important;align-items:center!important;gap:10px!important;padding:10px 12px!important;min-width:0!important}
+.order-item>div:nth-child(2){min-width:0!important}
+.order-item>div:nth-child(2)>b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
+.order-item .stock-badge{justify-self:end!important}
+.order-item .code-copy,.order-item .code-no-code{margin-top:3px!important}
+.order-list{gap:5px!important}
 @media(max-width:760px){
 .chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;gap:7px 8px!important;padding:10px 7px!important;align-items:center!important}
-.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.form-note{grid-column:3;grid-row:3}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}
+.chem-row>.chem-name{grid-column:2;grid-row:1}.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start}.chem-row>.tank-bar{grid-column:1 / 3;grid-row:3;justify-self:start;margin-left:18px}.chem-row>.stock-badge{grid-column:2;grid-row:4;justify-self:start}.chem-row>.row-action{grid-column:3;grid-row:1;justify-self:end}
+.order-item{grid-template-columns:6px minmax(0,1fr) minmax(98px,max-content)!important;gap:7px!important;padding:8px 7px!important}
+.order-item .stock-badge{padding:5px 7px!important}
+.order-item>div:nth-child(2)>b{font-size:13px!important}
 .generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
 `}</style>
@@ -449,7 +459,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Foto chemija</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(170px,1.5fr) minmax(90px,.8fr) minmax(105px,1fr) 58px minmax(145px,auto) 34px",alignItems:"center",gap:12,padding:"16px 10px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><span className="form-note" style={{fontSize:12,whiteSpace:"nowrap"}}>{p.tank_size==="small"?"Mažas":"Didelis"}</span><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(160px,1.4fr) minmax(85px,.7fr) minmax(95px,1fr) minmax(120px,auto) 34px",alignItems:"center",gap:10,padding:"12px 9px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
