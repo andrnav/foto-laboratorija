@@ -31,11 +31,16 @@ function chemicalTone(name="") {
   return "green";
 }
 const INK_ORDER = ["magenta","orange","cyan","light black","yellow","light magenta","black","light cyan"];
+function normalizedInkName(name="") {
+  const n=String(name).toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ").trim();
+  return INK_ORDER.find(color => n===color || n.startsWith(color+" ") || n.endsWith(" "+color)) || n;
+}
 function inkHex(name="") {
-  const n=String(name).toLowerCase().replace(/[_-]+/g," ").trim();
+  const n=normalizedInkName(name);
   const colors={magenta:"#d62978",orange:"#f28c28",cyan:"#00a6d6","light black":"#8b9299",yellow:"#f2d21b","light magenta":"#ed9ac0",black:"#252525","light cyan":"#8bd8e8"};
   return colors[n] || "#a0a0a0";
 }
+function isInkProduct(p) { return p.kind==="ink" || p.subcategory==="ink" || (p.category==="wide" && INK_ORDER.some(c=>normalizedInkName(p.name)===c)); }
 function inkSortKey(p) {
   const n=String(p.name||"").toLowerCase().replace(/[_-]+/g," ").trim();
   const i=INK_ORDER.indexOf(n);
@@ -424,7 +429,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Foto chemija</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name"><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><span className="form-note" style={{fontSize:10,whiteSpace:"nowrap"}}>{p.tank_size==="small"?"Mažas":"Didelis"}</span><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(170px,1.5fr) minmax(90px,.8fr) minmax(105px,1fr) 58px minmax(145px,auto) 34px",alignItems:"center",gap:12,padding:"16px 10px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><span className="form-note" style={{fontSize:12,whiteSpace:"nowrap"}}>{p.tank_size==="small"?"Mažas":"Didelis"}</span><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -476,7 +481,7 @@ export default function App() {
   </div>;
 }
 
-function StockBadge({p}) { const percent=p.kind==="ink"; return <span className={`stock-badge ${stockTone(p)}`}>{fmt(p.quantity)}{percent?"%":""} <i>/</i> {fmt(p.min_quantity)}{percent?"%":""}</span>; }
+function StockBadge({p}) { const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`} style={{display:"inline-flex",flexDirection:"column",alignItems:"flex-start",gap:3,padding:"8px 12px",minWidth:112,whiteSpace:"nowrap"}}><span style={{fontSize:11,fontWeight:600,opacity:.78}}>DABAR</span><strong style={{fontSize:17,lineHeight:1.1}}>{fmt(p.quantity)} {unit}</strong><span style={{fontSize:11,fontWeight:600,opacity:.78}}>MIN. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper" || p.kind === "chemical" || !p.color) return undefined;
   return { backgroundColor: p.color, borderLeft: "3px solid #789985" };
