@@ -438,7 +438,6 @@ export default function App() {
 .order-item>div:nth-child(2)>b{font-size:13px!important}
 .ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
-`}
 /* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
 @media(max-width:760px){
   .surface-group{display:block!important;width:100%!important;min-width:0!important;margin:0 0 12px!important;}
@@ -464,7 +463,7 @@ export default function App() {
   .chem-row>.tank-bar{grid-column:2 / 5!important;grid-row:3!important;justify-self:start!important;margin:2px 0 0!important;transform:scale(.82)!important;transform-origin:left center!important;max-width:100%!important;}
   .chem-legend{display:flex!important;flex-wrap:wrap!important;gap:6px 10px!important;padding:8px 4px!important;font-size:11px!important;}
 }
-
+`}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
