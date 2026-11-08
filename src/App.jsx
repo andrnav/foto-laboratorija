@@ -403,11 +403,11 @@ export default function App() {
  .order-list{gap:5px!important}
 /* Tarpinis desktop plotis: foto kortelės rodomos viena po kitos, kad chemijos valdikliai nesusispaustų. */
 @media (min-width:761px) and (max-width:1680px){
-  .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important}
-  .inventory-grid>.panel{width:100%!important;min-width:0!important}
+  .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px!important;width:100%!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important}
+  .inventory-grid>.panel{width:100%!important;min-width:0!important;max-width:100%!important}
   .chemical-panel{min-width:0!important;overflow:hidden!important}
   .chem-list{width:100%!important;min-width:0!important}
-  .chem-row{grid-template-columns:10px minmax(170px,1.35fr) minmax(85px,.75fr) minmax(105px,.9fr) minmax(100px,auto) 34px!important;gap:10px!important;width:100%!important;box-sizing:border-box!important;min-width:0!important}
+  .chem-row{grid-template-columns:10px minmax(190px,1.45fr) minmax(90px,.8fr) minmax(100px,.85fr) minmax(112px,auto) 36px!important;gap:9px!important;width:100%!important;box-sizing:border-box!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important}
   .chem-row>.chem-name{min-width:0!important;overflow-wrap:anywhere!important}
   .chem-row>.chem-name>b{white-space:normal!important;overflow-wrap:anywhere!important}
   .chem-row>.code-copy,.chem-row>.code-no-code{white-space:nowrap!important;min-width:0!important}
@@ -432,11 +432,22 @@ export default function App() {
 .product-description{color:#455b4d!important;font-weight:600!important;opacity:1!important}
 .surface-label{font-size:25px!important;font-weight:800!important;letter-spacing:-.3px!important;box-sizing:border-box!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-align:center!important;overflow-wrap:anywhere!important}
 .surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
+/* Popieriaus pločiai aiškesni, o likučio kortelė turi daugiau vidinio atitraukimo. */
+.paper-row .paper-width{font-size:17px!important;font-weight:800!important;letter-spacing:-.2px!important;color:#172c20!important;padding-left:8px!important;line-height:1.2!important}
+.paper-row .stock-badge{padding-left:13px!important;padding-right:11px!important}
+.paper-head .actions-head{text-align:center!important;padding-right:8px!important}
+.paper-row .row-actions{justify-content:center!important;align-items:center!important;min-width:100%!important}
+
 /* Kiekvieno popieriaus paviršiaus pločių eilutės gauna subtilų atitinkamos grupės atspalvį. */
 .surface-group.glossy .paper-row{background:#f0fbf1!important;border-color:#dcefe0!important}
 .surface-group.lustre .paper-row{background:#f0f8ff!important;border-color:#dcebf8!important}
 .surface-group.silk .paper-row{background:#fff3f7!important;border-color:#f4e1e9!important}
 .surface-rows{padding-bottom:3px!important}
+@media (min-width:761px){
+  .paper-head{grid-template-columns: minmax(110px,1.05fr) minmax(90px,.8fr) minmax(110px,1fr) minmax(125px,.95fr) minmax(130px,.9fr)!important;align-items:center!important}
+  .paper-row{grid-template-columns:minmax(110px,1.05fr) minmax(90px,.8fr) minmax(110px,1fr) minmax(125px,.95fr) minmax(130px,.9fr)!important;align-items:center!important;column-gap:8px!important}
+  .paper-row>.row-actions{justify-self:stretch!important}
+}
 @media(max-width:760px){
 /* Mobiliajame vaizde grąžiname koregavimo veiksmus foto popieriui ir chemijai. */
 .paper-row .row-actions{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;position:relative!important;z-index:2!important;}
