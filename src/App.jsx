@@ -497,7 +497,6 @@ export default function App() {
   .paper-row .stock-badge{margin-left:5px!important;}
   .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;}
 }
-`}
 /* Chemijos eilutės: atskiri stulpeliai nebeleidžia bakų ikonoms užlipti ant likučio ar pavadinimo. */
 @media (min-width:761px){
   .chemical-panel .chem-row{
@@ -529,6 +528,7 @@ export default function App() {
 @media(max-width:760px){
   .paper-row .paper-width{min-height:30px!important;padding:3px 6px!important;margin:0 2px!important;font-size:14px!important;}
 }
+`}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
