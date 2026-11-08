@@ -403,9 +403,24 @@ export default function App() {
  .order-list{gap:5px!important}
 /* Tarpinis desktop plotis: foto kortelės rodomos viena po kitos, kad chemijos valdikliai nesusispaustų. */
 @media (min-width:761px) and (max-width:1680px){
+  /* Vienodas bendras plotis: viršutinė juosta, užsakymų kortelė ir turinio kortelės turi sutapti. */
+  .main-content > .topbar,
+  .main-content > .order-panel-top,
+  .main-content > .inventory-grid{
+    width:100%!important;
+    max-width:1120px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    box-sizing:border-box!important;
+  }
+  .main-content > .topbar{flex-wrap:wrap!important;row-gap:12px!important;}
+  .main-content > .topbar .top-meta{min-width:0!important;max-width:100%!important;flex-wrap:wrap!important;}
+  .main-content > .order-panel-top{box-sizing:border-box!important;}
   .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px!important;width:100%!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important}
   .inventory-grid>.panel{width:100%!important;min-width:0!important;max-width:100%!important}
   .chemical-panel{min-width:0!important;overflow:hidden!important}
+  .chemical-panel > .table-head,
+  .chemical-panel .chem-list + .table-head{display:none!important}
   .chem-list{width:100%!important;min-width:0!important}
   .chem-row{grid-template-columns:10px minmax(190px,1.45fr) minmax(90px,.8fr) minmax(100px,.85fr) minmax(112px,auto) 36px!important;gap:9px!important;width:100%!important;box-sizing:border-box!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important}
   .chem-row>.chem-name{min-width:0!important;overflow-wrap:anywhere!important}
