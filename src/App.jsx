@@ -623,7 +623,51 @@ export default function App() {
   .chemical-panel .chem-row>.row-action{grid-area:action!important;}
 }
 
-`}</style>
+/* Chemijos talpos: skystis matomas, vienodas tinklelis ir + atskiroje trečioje eilėje. */
+.chemical-panel .tank-bar{width:116px!important;min-width:116px!important;max-width:116px!important;overflow:visible!important;}
+.chemical-panel .tank-bar .tank-icons{
+  display:grid!important;
+  grid-template-columns:repeat(5,19px)!important;
+  grid-auto-rows:28px!important;
+  gap:5px 4px!important;
+  align-items:center!important;
+  justify-items:center!important;
+  width:100%!important;
+}
+.chemical-panel .tank-bar-large .tank-icons{
+  grid-template-columns:repeat(3,28px)!important;
+  grid-auto-rows:36px!important;
+  gap:5px 5px!important;
+}
+.chemical-panel .tank-canister{display:block!important;width:19px!important;height:26px!important;overflow:visible!important;}
+.chemical-panel .tank-bar-large .tank-canister{width:28px!important;height:35px!important;}
+.chemical-panel .tank-canister-liquid{fill:currentColor!important;opacity:1!important;}
+.chemical-panel .tank-canister-outline{fill:none!important;stroke:#9eafa5!important;stroke-width:2.2!important;}
+.chemical-panel .tank-canister-neck{fill:none!important;stroke:#9eafa5!important;stroke-width:2.2!important;stroke-linejoin:round!important;}
+.chemical-panel .tank-canister-highlight{fill:none!important;stroke:rgba(255,255,255,.9)!important;stroke-width:1.5!important;}
+.chemical-panel .tank-bar.blue{color:#54a9e8!important;}
+.chemical-panel .tank-bar.red{color:#ef7884!important;}
+.chemical-panel .tank-bar.yellow{color:#efc83d!important;}
+.chemical-panel .tank-bar .tank-overflow{
+  grid-column:1/-1!important;
+  justify-self:center!important;
+  align-self:center!important;
+  margin:0!important;
+  font-size:17px!important;
+  line-height:18px!important;
+  color:#52685a!important;
+}
+@media(min-width:1641px){
+  .chemical-panel .chem-row{
+    grid-template-columns:9px minmax(180px,260px) max-content 116px max-content 34px!important;
+    grid-template-areas:"dot name code tanks stock action"!important;
+    column-gap:12px!important;
+  }
+  .chemical-panel .chem-row>.tank-bar{width:116px!important;min-width:116px!important;max-width:116px!important;overflow:visible!important;}
+}
+
+`}
+</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       <nav className="main-nav">
@@ -765,15 +809,19 @@ function TankBar({quantity,tone,small=false}) {
   return <div className={`tank-bar ${tone} ${small ? "tank-bar-small" : "tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
     <div className="tank-icons">
       {tanks.map(t => {
-        const top = 36 - 28 * Math.max(0, Math.min(1, t.level));
-        return <svg key={t.key} className="tank-canister" viewBox="0 0 36 42" role="img" aria-label={`${Math.round(t.level * 100)} procentų`}>
-          <path className="tank-canister-liquid" d={`M8 ${top} H28 V34 Q28 38 24 38 H12 Q8 38 8 34 Z`} />
-          <path className="tank-canister-outline" d="M10 4 H24 L30 10 V34 Q30 40 24 40 H12 Q6 40 6 34 V10 Q6 4 10 4 Z" />
-          <path className="tank-canister-cap" d="M10 9 H24" />
+        const level = Math.max(0, Math.min(1, t.level));
+        const liquidY = 35 - 25 * level;
+        const liquidHeight = 25 * level;
+        return <svg key={t.key} className="tank-canister" viewBox="0 0 36 44" role="img" aria-label={`${Math.round(level * 100)} procentų`}>
+          <rect x="7" y="9" width="22" height="31" rx="4" fill="#fff" />
+          <rect x="10" y={liquidY} width="16" height={liquidHeight} rx="2" className="tank-canister-liquid" />
+          <rect x="7" y="9" width="22" height="31" rx="4" className="tank-canister-outline" />
+          <path d="M12 9 V5 H24 V9" className="tank-canister-neck" />
+          <path d="M10 14 H26" className="tank-canister-highlight" />
         </svg>;
       })}
+      {overflow && <b className="tank-overflow">+</b>}
     </div>
-    {overflow && <b className="tank-overflow">+</b>}
   </div>;
 }
 function Modal({title,children,onClose,wide}) {
