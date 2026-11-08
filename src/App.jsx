@@ -3,10 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  Layers3, Printer, CupSoda, Frame, Box, QrCode, PlusCircle, MinusCircle,
+  Layers3, Printer, CupSoda, Frame, Box, QrCode, PlusCircle,
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
-  ChevronDown, ChevronRight, Plus, Minus, ScanLine, ShieldCheck, AlertTriangle,
+  ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
   Download, Trash2, LockKeyhole, CalendarDays
 } from "lucide-react";
 
@@ -72,12 +72,6 @@ const STARTER = [
 ];
 
 function fmt(n) { return Number(n ?? 0).toLocaleString("lt-LT", { maximumFractionDigits: 2 }); }
-function dateTime(d = new Date()) {
-  const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
-  const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
-  const time = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).format(d);
-  return `${date}, ${weekday} ${time}`;
-}
 function clockParts(d = new Date()) {
   const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
   const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
@@ -133,10 +127,8 @@ export default function App() {
   const [loading, setLoading] = useState(configured);
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [openSections, setOpenSections] = useState({paper:true,chem:true,history:false});
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [scannerRunning, setScannerRunning] = useState(false);
   const scannerRef = useRef(null);
   const scannerInstance = useRef(null);
   const scanInProgress = useRef(false);
@@ -221,7 +213,6 @@ export default function App() {
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
   function flash(msg) { setNotice(msg); window.setTimeout(() => setNotice(""), 4500); }
-  function toggleSection(key) { setOpenSections(s => ({...s,[key]:!s[key]})); }
 
   async function signIn(email, password) {
     if (!supabase) return flash("Pirmiausia sukonfigūruokite Supabase nustatymus (.env).");
@@ -359,23 +350,19 @@ export default function App() {
             scanInProgress.current = true;
             try { await scanner.stop(); } catch {}
             scannerInstance.current = null;
-            setScannerRunning(false);
             setModal(null);
             await scanCode(decoded, true);
           }, () => {});
-        setScannerRunning(true);
       } catch (e) { flash(`Nepavyko paleisti kameros: ${e.message || e}`); }
     }, 250);
   }
   async function stopScanner() {
     if (scannerInstance.current) { try { await scannerInstance.current.stop(); } catch {} scannerInstance.current = null; }
-    setScannerRunning(false); setModal(null);
+    setModal(null);
   }
 
   const pageTitle = activeLabel;
   const categoryProducts = products.filter(p => p.category === active);
-  const categoryPaper = categoryProducts.filter(p => p.kind === "paper");
-  const categoryChem = categoryProducts.filter(p => p.kind !== "paper");
   const categoryCounts = products.reduce((a,p) => ({...a,[p.category]:(a[p.category]||0)+1}),{});
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
