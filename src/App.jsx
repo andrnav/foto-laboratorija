@@ -508,6 +508,27 @@ export default function App() {
   .chemical-panel .chem-row>.stock-badge{justify-self:start!important;width:max-content!important;white-space:nowrap!important;margin:0!important;}
   .chemical-panel .chem-row>.row-action{justify-self:end!important;}
 }
+/* Chemijos talpų zona: fiksuotas plotas, tvarkingas tinklelis ir atskira trečia eilutė „+“. */
+.tank-bar{display:grid!important;align-content:center!important;justify-content:start!important;gap:5px 7px!important;min-width:0!important;max-width:none!important;overflow:visible!important;box-sizing:border-box!important;}
+.tank-bar-large{width:112px!important;grid-template-columns:repeat(3,30px)!important;grid-auto-rows:34px!important;}
+.tank-bar-small{width:190px!important;grid-template-columns:repeat(5,25px)!important;grid-auto-rows:29px!important;}
+.tank-bar .tank{display:flex!important;position:relative!important;align-items:flex-end!important;justify-content:center!important;width:100%!important;height:100%!important;min-width:0!important;overflow:hidden!important;border:2px solid #aebfb4!important;border-radius:5px 5px 7px 7px!important;background:#fff!important;box-sizing:border-box!important;padding:2px!important;}
+.tank-bar .tank i{display:block!important;width:100%!important;min-height:2px!important;border-radius:2px 2px 4px 4px!important;transition:height .2s ease!important;}
+.tank-bar.blue .tank i{background:#55afea!important;}
+.tank-bar.red .tank i{background:#ef8490!important;}
+.tank-bar.yellow .tank i{background:#f2cd45!important;}
+.tank-bar .tank-overflow{grid-column:1/-1!important;justify-self:start!important;align-self:start!important;font-size:13px!important;line-height:14px!important;font-weight:800!important;color:#52685b!important;padding-left:2px!important;}
+@media(min-width:761px){
+ .chemical-panel .chem-row{grid-template-columns:9px minmax(160px,1fr) max-content 190px max-content 34px!important;column-gap:12px!important;row-gap:5px!important;}
+ .chemical-panel .chem-row>.tank-bar{width:190px!important;max-width:none!important;overflow:visible!important;display:grid!important;flex-wrap:initial!important;transform:none!important;}
+ .chemical-panel .chem-row>.chem-name{margin-right:0!important;}
+ .chemical-panel .chem-row>.code-copy,.chemical-panel .chem-row>.code-no-code{justify-self:start!important;margin:0!important;}
+}
+@media(max-width:760px){
+ .chemical-panel .chem-row>.tank-bar{grid-column:2/4!important;grid-row:3!important;width:190px!important;max-width:100%!important;overflow:visible!important;display:grid!important;transform:none!important;}
+ .tank-bar-large{width:112px!important;grid-template-columns:repeat(3,30px)!important;}
+ .tank-bar-small{width:190px!important;grid-template-columns:repeat(5,25px)!important;}
+}
 /* Skaičiaus žyma foto popieriaus eilutėje turi turėti oro aplink save ir subtilų apvadą. */
 .paper-row .paper-width{display:inline-flex!important;align-items:center!important;width:max-content!important;max-width:100%!important;min-height:34px!important;padding:3px 7px!important;margin:0 4px!important;border:1px solid rgba(105,157,119,.28)!important;border-radius:8px!important;background:rgba(255,255,255,.48)!important;box-sizing:border-box!important;}
 .surface-group:has(.surface-label.blue) .paper-row .paper-width{border-color:rgba(93,153,202,.30)!important;}
@@ -650,14 +671,15 @@ function TankBar({quantity,tone,small=false}) {
   const full=Math.floor(amount+1e-8);
   const fraction=Math.round((amount-full)*10)/10;
   const limit=small?10:5;
+  const columns=small?5:3;
   const shown=Math.min(full,limit);
   const showPartial=full<limit && fraction>0;
   const overflow=amount>limit;
   const tanks=Array.from({length:shown},(_,i)=>({key:i,level:1}));
   if(showPartial) tanks.push({key:"partial",level:fraction});
-  return <div className={`tank-bar ${tone} ${small?"tank-bar-small":"tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
+  return <div className={`tank-bar ${tone} ${small?"tank-bar-small":"tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`} style={{gridTemplateColumns:`repeat(${columns}, ${small?25:30}px)`}}>
     {tanks.map(t=><span key={t.key} className="tank filled" title={`${Math.round(t.level*100)}%`}><i style={{height:`${Math.max(0,Math.min(1,t.level))*100}%`}}/></span>)}
-    {overflow&&<b className="tank-overflow">{limit}+</b>}
+    {overflow&&<b className="tank-overflow">+</b>}
   </div>;
 }
 function Modal({title,children,onClose,wide}) {
