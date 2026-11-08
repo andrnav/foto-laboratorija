@@ -497,6 +497,27 @@ export default function App() {
   .paper-row .stock-badge{margin-left:5px!important;}
   .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;}
 }
+
+/* Vidutinio pločio desktop: apribojame foto medžiagų kortelių plotį,
+   kad lentelės eilutės neišsitęstų per visą ekraną. */
+@media (min-width:761px) and (max-width:1640px){
+  .inventory-grid{
+    width:100%!important;
+    max-width:1200px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .inventory-grid>.paper-panel,
+  .inventory-grid>.chemical-panel{
+    width:100%!important;
+    max-width:1200px!important;
+  }
+  .paper-panel .paper-table{
+    width:100%!important;
+    max-width:100%!important;
+  }
+}
 /* Chemijos eilutės: atskiri stulpeliai nebeleidžia bakų ikonoms užlipti ant likučio ar pavadinimo. */
 @media (min-width:761px){
   .chemical-panel .chem-row{
