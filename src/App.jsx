@@ -538,7 +538,52 @@ export default function App() {
   .chem-row>.tank-bar{grid-column:2 / 5!important;grid-row:3!important;justify-self:start!important;margin:2px 0 0!important;transform:scale(.82)!important;transform-origin:left center!important;max-width:100%!important;}
   .chem-legend{display:flex!important;flex-wrap:wrap!important;gap:6px 10px!important;padding:8px 4px!important;font-size:11px!important;}
 }
+/* === Naujas desktop išdėstymas: lankstus Flex, be fiksuotų lentelės pločių === */
+@media (min-width:761px){
+  .main-content{min-width:0!important;width:100%!important;box-sizing:border-box!important}
+  .main-content>.topbar,.main-content>.order-panel-top,.main-content>.inventory-grid,.main-content>.photo-other-panel{
+    width:100%!important;max-width:1380px!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box!important
+  }
+  .main-content>.topbar{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;align-items:center!important;gap:14px 22px!important}
+  .topbar .title-wrap{flex:1 1 280px!important;min-width:230px!important}
+  .topbar .top-meta{flex:0 1 auto!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important;min-width:0!important}
+  .inventory-grid{display:flex!important;flex-flow:column nowrap!important;align-items:stretch!important;gap:18px!important;width:100%!important;max-width:1380px!important;margin:0 auto!important}
+  .inventory-grid>.panel{display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important}
+  .paper-table{width:100%!important;min-width:0!important}
+  .paper-head{display:flex!important;align-items:center!important;gap:12px!important;padding:10px 14px!important;box-sizing:border-box!important}
+  .paper-head>span:nth-child(1){flex:0 0 18%!important}
+  .paper-head>span:nth-child(2){flex:0 0 17%!important}
+  .paper-head>span:nth-child(3){flex:0 0 22%!important}
+  .paper-head>span:nth-child(4){flex:0 0 20%!important}
+  .paper-head>span:nth-child(5){flex:1 1 150px!important;text-align:center!important}
+  .surface-group{display:flex!important;align-items:stretch!important;gap:12px!important;width:100%!important;min-width:0!important;padding:0 8px!important;box-sizing:border-box!important}
+  .surface-label{flex:0 0 18%!important;min-width:110px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:12px!important}
+  .surface-rows{display:flex!important;flex:1 1 0!important;flex-direction:column!important;gap:7px!important;min-width:0!important;padding:0!important}
+  .surface-rows .paper-row{display:flex!important;flex-flow:row nowrap!important;align-items:center!important;gap:12px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:9px 12px!important;margin:0!important;border:1px solid transparent!important;border-radius:11px!important;overflow:visible!important}
+  .paper-row .paper-width{flex:0 0 17%!important;min-width:90px!important;padding:0 0 0 4px!important;font-size:18px!important;font-weight:850!important;white-space:nowrap!important}
+  .paper-row>.code-copy,.paper-row>.code-no-code{flex:0 0 22%!important;min-width:0!important;white-space:nowrap!important}
+  .paper-row>.stock-badge{flex:0 0 auto!important;min-width:0!important;margin-right:auto!important;padding:7px 12px!important}
+  .paper-row>.row-actions{display:flex!important;flex:0 0 auto!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important;min-width:104px!important;width:auto!important;margin-left:auto!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+  .paper-row .row-actions .row-action{display:inline-flex!important;flex:0 0 34px!important;width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;align-items:center!important;justify-content:center!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:3!important}
+  .chemical-panel{min-width:0!important;width:100%!important;overflow:visible!important}
+  .chemical-panel .chem-list{display:flex!important;flex-direction:column!important;gap:0!important;width:100%!important;min-width:0!important}
+  .chemical-panel .chem-row{display:flex!important;flex-flow:row nowrap!important;align-items:center!important;gap:14px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:12px 14px!important}
+  .chemical-panel .chem-dot{flex:0 0 9px!important;width:9px!important}
+  .chemical-panel .chem-name{flex:1 1 240px!important;min-width:130px!important;overflow-wrap:anywhere!important}
+  .chemical-panel .chem-row>.code-copy,.chemical-panel .chem-row>.code-no-code{flex:0 0 100px!important;min-width:0!important;white-space:nowrap!important}
+  .chemical-panel .chem-row>.tank-bar{flex:0 1 125px!important;min-width:50px!important;max-width:130px!important}
+  .chemical-panel .chem-row>.stock-badge{flex:0 0 auto!important;margin-left:auto!important}
+  .chemical-panel .chem-row>.row-action{display:inline-flex!important;flex:0 0 34px!important;width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:4!important}
+}
+/* Labai platūs ekranai: dvi kortelės greta tik kai joms tikrai pakanka vietos. */
+@media (min-width:1760px){
+  .main-content>.inventory-grid{flex-flow:row wrap!important;align-items:flex-start!important}
+  .main-content>.inventory-grid>.paper-panel{flex:1 1 58%!important;min-width:620px!important}
+  .main-content>.inventory-grid>.chemical-panel{flex:1 1 38%!important;min-width:500px!important}
+}
+/* Mobilioji versija sąmoningai paliekama pagal ankstesnes taisykles. */
 `}
+
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
