@@ -520,15 +520,15 @@ export default function App() {
 @media (min-width:761px){
   .chemical-panel .chem-row{
     display:grid!important;
-    grid-template-columns:9px minmax(150px,.82fr) max-content minmax(118px,132px) max-content 34px!important;
+    grid-template-columns:9px minmax(120px,1.25fr) max-content minmax(82px,112px) max-content 34px!important;
     grid-template-rows:minmax(42px,auto)!important;
     grid-template-areas:"dot name code tanks stock action"!important;
     align-items:center!important;
-    column-gap:8px!important;
+    column-gap:9px!important;
     row-gap:0!important;
     min-width:0!important;
     box-sizing:border-box!important;
-    overflow:visible!important;
+    overflow:hidden!important;
     padding:11px 10px!important;
   }
   .chemical-panel .chem-row>.chem-dot{grid-area:dot!important;align-self:center!important;margin:0!important;}
@@ -538,28 +538,49 @@ export default function App() {
   .chemical-panel .chem-row>.code-no-code{grid-area:code!important;justify-self:start!important;min-width:0!important;max-width:100%!important;white-space:nowrap!important;}
   .chemical-panel .chem-row>.tank-bar{
     grid-area:tanks!important;justify-self:start!important;align-self:center!important;
-    display:grid!important;
-    grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    grid-auto-rows:24px!important;
-    align-content:center!important;justify-items:center!important;
-    gap:3px 4px!important;
-    width:132px!important;max-width:132px!important;min-width:132px!important;
-    overflow:visible!important;margin:0!important;transform:none!important;
+    display:flex!important;flex-wrap:nowrap!important;gap:3px!important;
+    width:100%!important;max-width:112px!important;min-width:0!important;
+    overflow:hidden!important;margin:0!important;transform:scale(.88)!important;
     transform-origin:left center!important;
   }
-  .chemical-panel .chem-row>.tank-bar-small{
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
-    grid-auto-rows:19px!important;
-    width:132px!important;max-width:132px!important;min-width:132px!important;
-    gap:3px 2px!important;
-  }
-  .chemical-panel .chem-row>.tank-bar-large .tank{width:34px!important;height:42px!important;}
-  .chemical-panel .chem-row>.tank-bar-small .tank{width:19px!important;height:22px!important;}
-  .chemical-panel .chem-row>.tank-bar .tank-overflow{justify-self:start!important;align-self:center!important;white-space:nowrap!important;font-size:12px!important;}
   .chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:end!important;width:max-content!important;max-width:100%!important;min-width:0!important;white-space:nowrap!important;margin:0!important;}
   .chemical-panel .chem-row>.row-action{grid-area:action!important;justify-self:end!important;position:relative!important;z-index:2!important;width:34px!important;height:34px!important;min-width:34px!important;}
 }
 
+
+/* Chemijos desktop pataisymai: trumpa pavadinimo zona, artimas kodas ir tvarkingai laužomi bakai. */
+@media (min-width:761px){
+  .chemical-panel .chem-row{
+    grid-template-columns:9px minmax(180px,260px) max-content 112px max-content 34px!important;
+    grid-template-areas:"dot name code tanks stock action"!important;
+    justify-content:start!important;
+    column-gap:12px!important;
+    row-gap:0!important;
+    overflow:visible!important;
+  }
+  .chemical-panel .chem-row>.chem-name{width:100%!important;max-width:260px!important;}
+  .chemical-panel .chem-row>.code-copy,
+  .chemical-panel .chem-row>.code-no-code{margin:0!important;justify-self:start!important;}
+  .chemical-panel .chem-row>.tank-bar{
+    width:112px!important;max-width:112px!important;min-width:112px!important;
+    display:flex!important;align-items:center!important;gap:4px!important;
+    overflow:visible!important;white-space:normal!important;transform:none!important;
+    margin:0!important;
+  }
+  .chemical-panel .chem-row>.tank-bar .tank-icons{
+    display:grid!important;grid-template-columns:repeat(5, minmax(0,1fr))!important;
+    grid-auto-rows:min-content!important;gap:4px 4px!important;align-items:center!important;
+    width:100%!important;min-width:0!important;
+  }
+  .chemical-panel .chem-row>.tank-bar-large .tank-icons{grid-template-columns:repeat(3, minmax(0,1fr))!important;}
+  .chemical-panel .chem-row>.tank-bar .tank{margin:0!important;justify-self:center!important;}
+  .chemical-panel .chem-row>.tank-bar .tank-overflow{flex:0 0 auto!important;align-self:end!important;margin:0 0 1px 0!important;white-space:nowrap!important;}
+  .chemical-panel .chem-row>.stock-badge{justify-self:start!important;margin:0!important;}
+}
+@media (max-width:760px){
+  .chem-row>.tank-bar .tank-icons{display:flex!important;flex-wrap:wrap!important;gap:4px!important;max-width:100%!important;}
+  .chem-row>.tank-bar .tank-overflow{margin-left:2px!important;}
+}
 
 `}
 </style>
@@ -695,16 +716,17 @@ function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
   const full=Math.floor(amount+1e-8);
   const fraction=Math.round((amount-full)*10)/10;
-  // Dideli bakai: 3 pirmoje eilėje ir 2 antroje. Maži: po 5 eilutėje.
-  const limit=5;
+  const limit=small?10:5;
   const shown=Math.min(full,limit);
   const showPartial=full<limit && fraction>0;
   const overflow=amount>limit;
   const tanks=Array.from({length:shown},(_,i)=>({key:i,level:1}));
   if(showPartial) tanks.push({key:"partial",level:fraction});
   return <div className={`tank-bar ${tone} ${small?"tank-bar-small":"tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
-    {tanks.map(t=><span key={t.key} className="tank filled" title={`${Math.round(t.level*100)}%`}><i style={{height:`${Math.max(0,Math.min(1,t.level))*100}%`}}/></span>)}
-    {overflow&&<b className="tank-overflow">{small?"5+":"2+"}</b>}
+    <div className="tank-icons">
+      {tanks.map(t=><span key={t.key} className="tank filled" title={`${Math.round(t.level*100)}%`}><i style={{height:`${Math.max(0,Math.min(1,t.level))*100}%`}}/></span>)}
+    </div>
+    {overflow&&<b className="tank-overflow">+</b>}
   </div>;
 }
 function Modal({title,children,onClose,wide}) {
