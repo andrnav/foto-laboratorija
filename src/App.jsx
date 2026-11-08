@@ -432,6 +432,10 @@ export default function App() {
 .product-description{color:#455b4d!important;font-weight:600!important;opacity:1!important}
 .surface-label{font-size:25px!important;font-weight:800!important;letter-spacing:-.3px!important;box-sizing:border-box!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-align:center!important;overflow-wrap:anywhere!important}
 .surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
+/* Kiekvieno popieriaus paviršiaus pločių eilutės gauna subtilų atitinkamos grupės atspalvį. */
+.surface-group.glossy .paper-row{background:#f0fbf1!important;border-color:#dcefe0!important}
+.surface-group.lustre .paper-row{background:#f0f8ff!important;border-color:#dcebf8!important}
+.surface-group.silk .paper-row{background:#fff3f7!important;border-color:#f4e1e9!important}
 .surface-rows{padding-bottom:3px!important}
 @media(max-width:760px){
 /* Mobiliajame vaizde grąžiname koregavimo veiksmus foto popieriui ir chemijai. */
@@ -525,7 +529,7 @@ export default function App() {
               <div className="table-head paper-head"><span>Paviršius</span><span>Plotis</span><span>Kodas</span><span>Likutis / Min.</span><span className="actions-head">Veiksmai</span></div>
               {["Glossy","Lustre","Silk"].map(surface=>{
                 const rows=papers.filter(p=>p.surface===surface);
-                return <div className="surface-group" key={surface}>
+                return <div className={`surface-group ${surface.toLowerCase()}`} key={surface}>
                   <div className={`surface-label ${PAPER_COLORS[surface]||"green"}`}>{surface}</div>
                   <div className="surface-rows">{rows.length ? rows.map(p=><ProductRow key={p.id} p={p} isAdmin={isAdmin} canManageStock={canManageStock} onAdjust={setModal} flash={flash}/>) : <div className="empty-row">Nėra {surface} pozicijų</div>}</div>
                 </div>;
