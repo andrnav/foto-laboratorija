@@ -469,13 +469,13 @@ export default function App() {
 .inventory-grid{min-width:0!important;align-items:start!important;}
 .inventory-grid>.panel{min-width:0!important;width:100%!important;max-width:100%!important;}
 /* Vidutiniuose desktop pločiuose abi kortelės dedamos viena po kita. */
-@media (min-width:761px) and (max-width:1450px){
+@media (min-width:761px) and (max-width:1640px){
   .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important;}
   .chemical-panel .chem-row{grid-template-columns:10px minmax(180px,1.4fr) minmax(90px,.7fr) minmax(105px,.8fr) minmax(100px,.8fr) 36px!important;gap:9px!important;padding:12px 14px!important;}
   .chemical-panel .chem-row>.tank-bar{max-width:120px!important;overflow:hidden!important;}
 }
 /* Platesniuose ekranuose kortelės vėl greta, bet chemijos stulpeliai turi ribas. */
-@media (min-width:1451px){
+@media (min-width:1641px){
   .inventory-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;gap:16px!important;}
   .chemical-panel .chem-row{grid-template-columns:9px minmax(125px,1.2fr) minmax(72px,.7fr) minmax(78px,.65fr) minmax(88px,.75fr) 34px!important;gap:7px!important;padding:10px 8px!important;}
   .chemical-panel .chem-row>.tank-bar{max-width:100px!important;overflow:hidden!important;}
@@ -498,6 +498,37 @@ export default function App() {
   .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;}
 }
 `}
+/* Chemijos eilutės: atskiri stulpeliai nebeleidžia bakų ikonoms užlipti ant likučio ar pavadinimo. */
+@media (min-width:761px){
+  .chemical-panel .chem-row{
+    display:grid!important;
+    grid-template-columns:9px minmax(135px,1fr) minmax(76px,auto) minmax(88px,104px) max-content 34px!important;
+    align-items:center!important;
+    gap:8px!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+  }
+  .chemical-panel .chem-row>.chem-name,
+  .chemical-panel .chem-row>.code-copy,
+  .chemical-panel .chem-row>.code-no-code,
+  .chemical-panel .chem-row>.tank-bar,
+  .chemical-panel .chem-row>.stock-badge,
+  .chemical-panel .chem-row>.row-action{min-width:0!important;max-width:100%!important;}
+  .chemical-panel .chem-row>.chem-name{overflow:hidden!important;}
+  .chemical-panel .chem-row>.chem-name>b{display:block!important;white-space:normal!important;overflow-wrap:anywhere!important;}
+  .chemical-panel .chem-row>.code-copy{white-space:nowrap!important;}
+  .chemical-panel .chem-row>.tank-bar{width:100%!important;max-width:104px!important;min-width:0!important;overflow:hidden!important;display:flex!important;flex-wrap:nowrap!important;gap:3px!important;}
+  .chemical-panel .chem-row>.stock-badge{justify-self:start!important;width:max-content!important;white-space:nowrap!important;margin:0!important;}
+  .chemical-panel .chem-row>.row-action{justify-self:end!important;}
+}
+/* Skaičiaus žyma foto popieriaus eilutėje turi turėti oro aplink save ir subtilų apvadą. */
+.paper-row .paper-width{display:inline-flex!important;align-items:center!important;width:max-content!important;max-width:100%!important;min-height:34px!important;padding:3px 7px!important;margin:0 4px!important;border:1px solid rgba(105,157,119,.28)!important;border-radius:8px!important;background:rgba(255,255,255,.48)!important;box-sizing:border-box!important;}
+.surface-group:has(.surface-label.blue) .paper-row .paper-width{border-color:rgba(93,153,202,.30)!important;}
+.surface-group:has(.surface-label.pink) .paper-row .paper-width{border-color:rgba(205,125,157,.30)!important;}
+@media(max-width:760px){
+  .paper-row .paper-width{min-height:30px!important;padding:3px 6px!important;margin:0 2px!important;font-size:14px!important;}
+}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
