@@ -583,6 +583,47 @@ export default function App() {
 }
 
 `}
+
+/* Chemijos talpos: aiškus kanistras su matomu užpildymo lygiu, vienodas dydis ir tarpai. */
+.chemical-panel .chem-row{
+  grid-template-columns:9px minmax(170px,260px) max-content minmax(100px,116px) max-content 34px!important;
+  grid-template-areas:"dot name code tanks stock action"!important;
+  justify-content:start!important;
+  column-gap:14px!important;
+  row-gap:0!important;
+  min-height:76px!important;
+  align-items:center!important;
+}
+.chemical-panel .chem-row>.chem-name{width:100%!important;max-width:260px!important;}
+.chemical-panel .chem-row>.tank-bar{
+  grid-area:tanks!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  width:116px!important;min-width:116px!important;max-width:116px!important;overflow:visible!important;
+  margin:0!important;transform:none!important;gap:4px!important;
+}
+.chemical-panel .chem-row>.tank-bar .tank-icons{
+  display:grid!important;grid-template-columns:repeat(5,22px)!important;grid-auto-rows:27px!important;
+  gap:4px 3px!important;align-items:center!important;justify-items:center!important;width:100%!important;
+}
+.chemical-panel .chem-row>.tank-bar-large .tank-icons{grid-template-columns:repeat(3,28px)!important;grid-auto-rows:34px!important;gap:4px 5px!important;}
+.chemical-panel .tank-canister{display:block!important;width:19px!important;height:24px!important;overflow:visible!important;flex:none!important;}
+.chemical-panel .tank-bar-large .tank-canister{width:28px!important;height:34px!important;}
+.chemical-panel .tank-canister-outline{fill:#fff!important;stroke:#aabbb0!important;stroke-width:2.3!important;stroke-linejoin:round!important;}
+.chemical-panel .tank-canister-liquid{fill:currentColor!important;opacity:.9!important;}
+.chemical-panel .tank-canister-cap{fill:none!important;stroke:#fff!important;stroke-width:1.5!important;}
+.chemical-panel .tank-bar.blue{color:#54a9e8!important;}
+.chemical-panel .tank-bar.red{color:#ef7884!important;}
+.chemical-panel .tank-bar.yellow{color:#efc83d!important;}
+.chemical-panel .tank-overflow{font-size:13px!important;line-height:1!important;font-weight:800!important;color:#52685a!important;margin-left:2px!important;align-self:end!important;}
+.chemical-panel .chem-row>.stock-badge{justify-self:start!important;}
+@media(max-width:760px){
+  .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;grid-template-areas:"dot name name action" "dot code tanks stock"!important;column-gap:8px!important;row-gap:6px!important;min-height:0!important;}
+  .chemical-panel .chem-row>.chem-name{grid-area:name!important;max-width:none!important;}
+  .chemical-panel .chem-row>.code-copy,.chemical-panel .chem-row>.code-no-code{grid-area:code!important;}
+  .chemical-panel .chem-row>.tank-bar{grid-area:tanks!important;width:auto!important;min-width:0!important;max-width:116px!important;}
+  .chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:end!important;}
+  .chemical-panel .chem-row>.row-action{grid-area:action!important;}
+}
+
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
@@ -713,20 +754,27 @@ function ProductRow({p,canManageStock,onAdjust,flash}) {
   return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone,small=false}) {
-  const amount=Math.max(0,Number(quantity)||0);
-  const full=Math.floor(amount+1e-8);
-  const fraction=Math.round((amount-full)*10)/10;
-  const limit=small?10:5;
-  const shown=Math.min(full,limit);
-  const showPartial=full<limit && fraction>0;
-  const overflow=amount>limit;
-  const tanks=Array.from({length:shown},(_,i)=>({key:i,level:1}));
-  if(showPartial) tanks.push({key:"partial",level:fraction});
-  return <div className={`tank-bar ${tone} ${small?"tank-bar-small":"tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
+  const amount = Math.max(0, Number(quantity) || 0);
+  const full = Math.floor(amount + 1e-8);
+  const fraction = Math.round((amount - full) * 10) / 10;
+  const limit = small ? 10 : 5;
+  const shown = Math.min(full, limit);
+  const showPartial = full < limit && fraction > 0;
+  const overflow = full > limit;
+  const tanks = Array.from({length: shown}, (_, i) => ({key: i, level: 1}));
+  if (showPartial) tanks.push({key: "partial", level: fraction});
+  return <div className={`tank-bar ${tone} ${small ? "tank-bar-small" : "tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
     <div className="tank-icons">
-      {tanks.map(t=><span key={t.key} className="tank filled" title={`${Math.round(t.level*100)}%`}><i style={{height:`${Math.max(0,Math.min(1,t.level))*100}%`}}/></span>)}
+      {tanks.map(t => {
+        const top = 36 - 28 * Math.max(0, Math.min(1, t.level));
+        return <svg key={t.key} className="tank-canister" viewBox="0 0 36 42" role="img" aria-label={`${Math.round(t.level * 100)} procentų`}>
+          <path className="tank-canister-liquid" d={`M8 ${top} H28 V34 Q28 38 24 38 H12 Q8 38 8 34 Z`} />
+          <path className="tank-canister-outline" d="M10 4 H24 L30 10 V34 Q30 40 24 40 H12 Q6 40 6 34 V10 Q6 4 10 4 Z" />
+          <path className="tank-canister-cap" d="M10 9 H24" />
+        </svg>;
+      })}
     </div>
-    {overflow&&<b className="tank-overflow">+</b>}
+    {overflow && <b className="tank-overflow">+</b>}
   </div>;
 }
 function Modal({title,children,onClose,wide}) {
