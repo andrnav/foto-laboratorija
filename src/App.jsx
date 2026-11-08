@@ -666,6 +666,39 @@ export default function App() {
   .chemical-panel .chem-row>.tank-bar{width:116px!important;min-width:116px!important;max-width:116px!important;overflow:visible!important;}
 }
 
+
+/* Chemijos likučio vizualizacija: horizontalūs skysčio indikatoriai po aprašymu. */
+.chemical-panel .chem-row{
+  grid-template-columns:9px minmax(180px,260px) max-content max-content 34px!important;
+  grid-template-areas:"dot name code stock action" "dot tanks tanks stock action"!important;
+  justify-content:start!important;column-gap:16px!important;row-gap:0!important;
+  min-height:78px!important;align-items:center!important;
+}
+.chemical-panel .chem-row>.chem-dot{grid-area:dot!important;align-self:center!important;}
+.chemical-panel .chem-row>.chem-name{grid-area:name!important;min-width:0!important;max-width:260px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:0!important;}
+.chemical-panel .chem-row>.chem-name>b{display:block!important;line-height:1.2!important;}
+.chemical-panel .chem-row>.chem-name .product-description{margin-top:3px!important;}
+.chemical-panel .chem-row>.code-copy,.chemical-panel .chem-row>.code-no-code{grid-area:code!important;justify-self:start!important;white-space:nowrap!important;}
+.chemical-panel .chem-row>.tank-bar,.chemical-panel .chem-row>.liquid-meter{grid-area:tanks!important;justify-self:start!important;align-self:start!important;}
+.chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:start!important;white-space:nowrap!important;}
+.chemical-panel .chem-row>.row-action{grid-area:action!important;justify-self:end!important;}
+.liquid-meter{display:block!important;margin-top:8px!important;width:max-content!important;max-width:100%!important;color:#54a9e8;}
+.liquid-meter.red{color:#ef7884!important;}.liquid-meter.yellow{color:#efc83d!important;}.liquid-meter.blue{color:#54a9e8!important;}
+.liquid-meter-cells{display:grid!important;grid-template-columns:repeat(3,30px)!important;grid-auto-rows:13px!important;gap:4px 5px!important;align-items:center!important;justify-items:stretch!important;}
+.liquid-meter-small .liquid-meter-cells{grid-template-columns:repeat(5,23px)!important;grid-auto-rows:11px!important;gap:4px 4px!important;}
+.liquid-cell{position:relative!important;display:block!important;width:100%!important;height:12px!important;border:1.5px solid #aabbb0!important;border-radius:3px!important;background:#f8fbf9!important;overflow:hidden!important;box-sizing:border-box!important;}
+.liquid-meter-small .liquid-cell{height:10px!important;}
+.liquid-cell i{position:absolute!important;left:0!important;right:0!important;bottom:0!important;display:block!important;background:currentColor!important;border-radius:1px 1px 2px 2px!important;min-height:0!important;}
+.liquid-overflow{grid-column:1/-1!important;justify-self:end!important;align-self:center!important;font-size:14px!important;line-height:13px!important;font-weight:900!important;color:#52685a!important;padding-right:2px!important;}
+@media(max-width:760px){
+  .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) 34px!important;grid-template-areas:"dot name action" "dot code stock" "dot tanks stock"!important;column-gap:9px!important;row-gap:5px!important;align-items:center!important;padding:10px 8px!important;}
+  .chemical-panel .chem-row>.chem-name{grid-area:name!important;max-width:none!important;}
+  .chemical-panel .chem-row>.code-copy,.chemical-panel .chem-row>.code-no-code{grid-area:code!important;justify-self:start!important;}
+  .chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:end!important;margin:0!important;}
+  .chemical-panel .chem-row>.row-action{grid-area:action!important;}
+  .liquid-meter{margin-top:7px!important;}
+}
+
 `}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
@@ -725,7 +758,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Foto chemija</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(160px,1.4fr) minmax(85px,.7fr) minmax(95px,1fr) minmax(120px,auto) 34px",alignItems:"center",gap:10,padding:"12px 9px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(160px,1.4fr) minmax(85px,.7fr) minmax(95px,1fr) minmax(120px,auto) 34px",alignItems:"center",gap:10,padding:"12px 9px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><LiquidMeter quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -796,34 +829,24 @@ function CopyCode({code,flash}) {
 function ProductRow({p,canManageStock,onAdjust,flash}) {
   return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
-function TankBar({quantity,tone,small=false}) {
+function LiquidMeter({quantity,tone,small=false}) {
   const amount = Math.max(0, Number(quantity) || 0);
   const full = Math.floor(amount + 1e-8);
-  const fraction = Math.round((amount - full) * 10) / 10;
+  const fraction = Math.max(0, Math.min(1, Math.round((amount - full) * 10) / 10));
   const limit = small ? 10 : 5;
-  const shown = Math.min(full, limit);
-  const showPartial = full < limit && fraction > 0;
-  const overflow = full > limit;
-  const tanks = Array.from({length: shown}, (_, i) => ({key: i, level: 1}));
-  if (showPartial) tanks.push({key: "partial", level: fraction});
-  return <div className={`tank-bar ${tone} ${small ? "tank-bar-small" : "tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
-    <div className="tank-icons">
-      {tanks.map(t => {
-        const level = Math.max(0, Math.min(1, t.level));
-        const liquidY = 35 - 25 * level;
-        const liquidHeight = 25 * level;
-        return <svg key={t.key} className="tank-canister" viewBox="0 0 36 44" role="img" aria-label={`${Math.round(level * 100)} procentų`}>
-          <rect x="7" y="9" width="22" height="31" rx="4" fill="#fff" />
-          <rect x="10" y={liquidY} width="16" height={liquidHeight} rx="2" className="tank-canister-liquid" />
-          <rect x="7" y="9" width="22" height="31" rx="4" className="tank-canister-outline" />
-          <path d="M12 9 V5 H24 V9" className="tank-canister-neck" />
-          <path d="M10 14 H26" className="tank-canister-highlight" />
-        </svg>;
-      })}
-      {overflow && <b className="tank-overflow">+</b>}
+  const visibleFull = Math.min(full, limit);
+  const visiblePartial = full < limit && fraction > 0;
+  const cells = Array.from({length: visibleFull}, (_, i) => ({key:i, level:1}));
+  if (visiblePartial) cells.push({key:"partial", level:fraction});
+  const overflow = amount > limit + 1e-8;
+  return <div className={`liquid-meter ${tone} ${small ? "liquid-meter-small" : "liquid-meter-large"}`} aria-label={`Likutis ${fmt(amount)} bakų`}>
+    <div className="liquid-meter-cells">
+      {cells.map(cell=><span className="liquid-cell" key={cell.key} title={`${Math.round(cell.level*100)}%`}><i style={{height:`${cell.level*100}%`}}/></span>)}
+      {overflow && <b className="liquid-overflow">+</b>}
     </div>
   </div>;
 }
+
 function Modal({title,children,onClose,wide}) {
   useEffect(()=>{const f=e=>e.key==="Escape"&&onClose();window.addEventListener("keydown",f);return()=>window.removeEventListener("keydown",f)},[onClose]);
   return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section className={`modal ${wide?"modal-wide":""}`} role="dialog" aria-modal="true"><header className="modal-header"><h2>{title}</h2><button className="icon-button" onClick={onClose}><X size={20}/></button></header><div className="modal-body">{children}</div></section></div>;
