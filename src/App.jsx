@@ -516,81 +516,37 @@ export default function App() {
   .paper-row .paper-width{min-height:30px!important;padding:3px 6px!important;margin:0 2px!important;font-size:14px!important;}
 }
 
-/* Desktop chemija: bakų vizualizacija perkeliama į atskirą eilutę,
-   kaip mobiliajame vaizde. Likučiui ir redagavimo mygtukui paliekama vieta. */
+/* Desktop chemija: bakai vienoje eilėje, iškart po prekės kodo ir prieš likutį. */
 @media (min-width:761px){
   .chemical-panel .chem-row{
     display:grid!important;
-    grid-template-columns:9px minmax(120px,1.35fr) minmax(76px,.75fr) max-content 34px!important;
-    grid-template-rows:auto auto!important;
-    grid-template-areas:
-      "dot name code stock action"
-      "dot tanks tanks tanks tanks"!important;
+    grid-template-columns:9px minmax(120px,1.25fr) max-content minmax(82px,112px) max-content 34px!important;
+    grid-template-rows:minmax(42px,auto)!important;
+    grid-template-areas:"dot name code tanks stock action"!important;
     align-items:center!important;
     column-gap:9px!important;
-    row-gap:7px!important;
+    row-gap:0!important;
     min-width:0!important;
     box-sizing:border-box!important;
     overflow:hidden!important;
     padding:11px 10px!important;
   }
-  .chemical-panel .chem-row>.chem-dot{
-    grid-area:dot!important;
-    align-self:stretch!important;
-    margin:0!important;
-  }
-  .chemical-panel .chem-row>.chem-name{
-    grid-area:name!important;
-    min-width:0!important;
-    max-width:100%!important;
-    overflow:hidden!important;
-  }
-  .chemical-panel .chem-row>.chem-name>b{
-    display:block!important;
-    white-space:normal!important;
-    overflow-wrap:anywhere!important;
-  }
+  .chemical-panel .chem-row>.chem-dot{grid-area:dot!important;align-self:center!important;margin:0!important;}
+  .chemical-panel .chem-row>.chem-name{grid-area:name!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;}
+  .chemical-panel .chem-row>.chem-name>b{display:block!important;white-space:normal!important;overflow-wrap:anywhere!important;}
   .chemical-panel .chem-row>.code-copy,
-  .chemical-panel .chem-row>.code-no-code{
-    grid-area:code!important;
-    justify-self:start!important;
-    min-width:0!important;
-    max-width:100%!important;
-    white-space:nowrap!important;
-  }
-  .chemical-panel .chem-row>.stock-badge{
-    grid-area:stock!important;
-    justify-self:end!important;
-    width:max-content!important;
-    max-width:100%!important;
-    min-width:0!important;
-    white-space:nowrap!important;
-    margin:0!important;
-  }
-  .chemical-panel .chem-row>.row-action{
-    grid-area:action!important;
-    justify-self:end!important;
-    position:relative!important;
-    z-index:2!important;
-    width:34px!important;
-    height:34px!important;
-    min-width:34px!important;
-  }
+  .chemical-panel .chem-row>.code-no-code{grid-area:code!important;justify-self:start!important;min-width:0!important;max-width:100%!important;white-space:nowrap!important;}
   .chemical-panel .chem-row>.tank-bar{
-    grid-area:tanks!important;
-    justify-self:start!important;
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    gap:3px!important;
-    width:max-content!important;
-    max-width:100%!important;
-    min-width:0!important;
-    overflow:hidden!important;
-    margin:0!important;
-    transform:scale(.88)!important;
+    grid-area:tanks!important;justify-self:start!important;align-self:center!important;
+    display:flex!important;flex-wrap:nowrap!important;gap:3px!important;
+    width:100%!important;max-width:112px!important;min-width:0!important;
+    overflow:hidden!important;margin:0!important;transform:scale(.88)!important;
     transform-origin:left center!important;
   }
+  .chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:end!important;width:max-content!important;max-width:100%!important;min-width:0!important;white-space:nowrap!important;margin:0!important;}
+  .chemical-panel .chem-row>.row-action{grid-area:action!important;justify-self:end!important;position:relative!important;z-index:2!important;width:34px!important;height:34px!important;min-width:34px!important;}
 }
+
 
 `}
 </style>
