@@ -520,15 +520,15 @@ export default function App() {
 @media (min-width:761px){
   .chemical-panel .chem-row{
     display:grid!important;
-    grid-template-columns:9px minmax(120px,1.25fr) max-content minmax(82px,112px) max-content 34px!important;
+    grid-template-columns:9px minmax(150px,.82fr) max-content minmax(118px,132px) max-content 34px!important;
     grid-template-rows:minmax(42px,auto)!important;
     grid-template-areas:"dot name code tanks stock action"!important;
     align-items:center!important;
-    column-gap:9px!important;
+    column-gap:8px!important;
     row-gap:0!important;
     min-width:0!important;
     box-sizing:border-box!important;
-    overflow:hidden!important;
+    overflow:visible!important;
     padding:11px 10px!important;
   }
   .chemical-panel .chem-row>.chem-dot{grid-area:dot!important;align-self:center!important;margin:0!important;}
@@ -538,11 +538,24 @@ export default function App() {
   .chemical-panel .chem-row>.code-no-code{grid-area:code!important;justify-self:start!important;min-width:0!important;max-width:100%!important;white-space:nowrap!important;}
   .chemical-panel .chem-row>.tank-bar{
     grid-area:tanks!important;justify-self:start!important;align-self:center!important;
-    display:flex!important;flex-wrap:nowrap!important;gap:3px!important;
-    width:100%!important;max-width:112px!important;min-width:0!important;
-    overflow:hidden!important;margin:0!important;transform:scale(.88)!important;
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    grid-auto-rows:24px!important;
+    align-content:center!important;justify-items:center!important;
+    gap:3px 4px!important;
+    width:132px!important;max-width:132px!important;min-width:132px!important;
+    overflow:visible!important;margin:0!important;transform:none!important;
     transform-origin:left center!important;
   }
+  .chemical-panel .chem-row>.tank-bar-small{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-auto-rows:19px!important;
+    width:132px!important;max-width:132px!important;min-width:132px!important;
+    gap:3px 2px!important;
+  }
+  .chemical-panel .chem-row>.tank-bar-large .tank{width:34px!important;height:42px!important;}
+  .chemical-panel .chem-row>.tank-bar-small .tank{width:19px!important;height:22px!important;}
+  .chemical-panel .chem-row>.tank-bar .tank-overflow{justify-self:start!important;align-self:center!important;white-space:nowrap!important;font-size:12px!important;}
   .chemical-panel .chem-row>.stock-badge{grid-area:stock!important;justify-self:end!important;width:max-content!important;max-width:100%!important;min-width:0!important;white-space:nowrap!important;margin:0!important;}
   .chemical-panel .chem-row>.row-action{grid-area:action!important;justify-self:end!important;position:relative!important;z-index:2!important;width:34px!important;height:34px!important;min-width:34px!important;}
 }
@@ -682,7 +695,8 @@ function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
   const full=Math.floor(amount+1e-8);
   const fraction=Math.round((amount-full)*10)/10;
-  const limit=small?10:5;
+  // Dideli bakai: 3 pirmoje eilėje ir 2 antroje. Maži: po 5 eilutėje.
+  const limit=5;
   const shown=Math.min(full,limit);
   const showPartial=full<limit && fraction>0;
   const overflow=amount>limit;
@@ -690,7 +704,7 @@ function TankBar({quantity,tone,small=false}) {
   if(showPartial) tanks.push({key:"partial",level:fraction});
   return <div className={`tank-bar ${tone} ${small?"tank-bar-small":"tank-bar-large"}`} aria-label={`Likutis ${amount.toFixed(1)} bakų`}>
     {tanks.map(t=><span key={t.key} className="tank filled" title={`${Math.round(t.level*100)}%`}><i style={{height:`${Math.max(0,Math.min(1,t.level))*100}%`}}/></span>)}
-    {overflow&&<b className="tank-overflow">{limit}+</b>}
+    {overflow&&<b className="tank-overflow">{small?"5+":"2+"}</b>}
   </div>;
 }
 function Modal({title,children,onClose,wide}) {
