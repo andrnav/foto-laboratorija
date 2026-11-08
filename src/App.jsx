@@ -464,6 +464,39 @@ export default function App() {
   .chem-row>.tank-bar{grid-column:2 / 5!important;grid-row:3!important;justify-self:start!important;margin:2px 0 0!important;transform:scale(.82)!important;transform-origin:left center!important;max-width:100%!important;}
   .chem-legend{display:flex!important;flex-wrap:wrap!important;gap:6px 10px!important;padding:8px 4px!important;font-size:11px!important;}
 }
+
+/* FOTO MEDŽIAGOS: atskiras išdėstymas, kad chemija nebeišlįstų už kortelės ribų. */
+.inventory-grid{min-width:0!important;align-items:start!important;}
+.inventory-grid>.panel{min-width:0!important;width:100%!important;max-width:100%!important;}
+/* Vidutiniuose desktop pločiuose abi kortelės dedamos viena po kita. */
+@media (min-width:761px) and (max-width:1450px){
+  .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important;}
+  .chemical-panel .chem-row{grid-template-columns:10px minmax(180px,1.4fr) minmax(90px,.7fr) minmax(105px,.8fr) minmax(100px,.8fr) 36px!important;gap:9px!important;padding:12px 14px!important;}
+  .chemical-panel .chem-row>.tank-bar{max-width:120px!important;overflow:hidden!important;}
+}
+/* Platesniuose ekranuose kortelės vėl greta, bet chemijos stulpeliai turi ribas. */
+@media (min-width:1451px){
+  .inventory-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;gap:16px!important;}
+  .chemical-panel .chem-row{grid-template-columns:9px minmax(125px,1.2fr) minmax(72px,.7fr) minmax(78px,.65fr) minmax(88px,.75fr) 34px!important;gap:7px!important;padding:10px 8px!important;}
+  .chemical-panel .chem-row>.tank-bar{max-width:100px!important;overflow:hidden!important;}
+  .chemical-panel .chem-row .stock-badge{padding:5px 7px!important;}
+}
+/* Popieriaus plotis ryškesnis, o visos trys paviršių grupės gauna subtilų spalvinį foną. */
+.paper-row .paper-width{font-size:15px!important;font-weight:800!important;letter-spacing:-.15px!important;color:#20382a!important;}
+.paper-row .stock-badge{margin-left:7px!important;}
+.surface-rows .paper-row{border:1px solid transparent!important;}
+.surface-group:has(.surface-label.green) .paper-row{background:#eff9ef!important;border-color:#d9efd9!important;}
+.surface-group:has(.surface-label.blue) .paper-row{background:#eff7ff!important;border-color:#d9eafb!important;}
+.surface-group:has(.surface-label.pink) .paper-row{background:#fff2f6!important;border-color:#f5dfe8!important;}
+@media(max-width:760px){
+  .surface-group{display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;gap:7px!important;align-items:stretch!important;margin:0 0 12px!important;}
+  .surface-label{grid-column:1!important;grid-row:1!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important;display:flex!important;align-items:center!important;justify-content:center!important;width:42px!important;min-width:42px!important;height:100%!important;min-height:100%!important;margin:0!important;padding:8px 5px!important;border-radius:10px!important;font-size:15px!important;letter-spacing:0!important;white-space:nowrap!important;text-overflow:clip!important;}
+  .surface-rows{grid-column:2!important;grid-row:1!important;min-width:0!important;gap:7px!important;}
+  .surface-rows .paper-row{background:inherit!important;}
+  .paper-row .paper-width{font-size:14px!important;font-weight:800!important;}
+  .paper-row .stock-badge{margin-left:5px!important;}
+  .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;}
+}
 `}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
@@ -577,7 +610,12 @@ export default function App() {
 
 function StockBadge({p}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
-  if (p.kind === "paper" || p.kind === "chemical" || !p.color) return undefined;
+  if (p.kind === "paper") {
+    const tones = { Glossy: "#eff9ef", Lustre: "#eff7ff", Silk: "#fff2f6" };
+    const borders = { Glossy: "#d9efd9", Lustre: "#d9eafb", Silk: "#f5dfe8" };
+    return { backgroundColor: tones[p.surface] || "#f5f8f5", borderColor: borders[p.surface] || "#e3ebe5" };
+  }
+  if (p.kind === "chemical" || !p.color) return undefined;
   return { backgroundColor: p.color, borderLeft: "3px solid #789985" };
 }
 function CopyCode({code,flash}) {
