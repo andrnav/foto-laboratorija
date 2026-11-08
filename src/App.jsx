@@ -483,6 +483,36 @@ export default function App() {
 .order-item>div:nth-child(2)>b{font-size:13px!important}
 .ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
+/* Desktop: vienodas kompaktiškas turinio plotis, o ne atskirai besitempiančios juostos. */
+@media (min-width:761px){
+  .main-content{min-width:0!important;}
+  .main-content>.topbar,
+  .main-content>.order-panel-top,
+  .main-content>.inventory-grid,
+  .main-content>.photo-other-panel{
+    width:100%!important;max-width:1050px!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box!important;
+  }
+  .main-content>.topbar{align-items:center!important;}
+  .main-content>.topbar .top-meta{min-width:0!important;}
+  .main-content>.inventory-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important;}
+  .main-content>.inventory-grid>.panel{width:100%!important;min-width:0!important;max-width:100%!important;}
+  /* Foto popieriaus lentelės stulpeliai turi tik tiek vietos, kiek reikia jų turiniui. */
+  .paper-head,.paper-row{
+    display:grid!important;
+    grid-template-columns:150px 105px 155px 116px minmax(126px,1fr)!important;
+    column-gap:8px!important;align-items:center!important;min-width:0!important;
+  }
+  .paper-head{padding-left:10px!important;padding-right:10px!important;}
+  .paper-row{padding-left:10px!important;padding-right:10px!important;}
+  .paper-row .paper-width{font-size:18px!important;font-weight:850!important;white-space:nowrap!important;padding-left:4px!important;}
+  .paper-row>.code-copy,.paper-row>.code-no-code{white-space:nowrap!important;min-width:0!important;}
+  .paper-row .stock-badge{justify-self:start!important;padding:6px 9px!important;}
+  .paper-row .row-actions{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;justify-content:flex-start!important;align-items:center!important;gap:5px!important;min-width:0!important;width:auto!important;}
+  .paper-row .row-actions .row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;flex:0 0 32px!important;width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;align-items:center!important;justify-content:center!important;}
+  /* Safari kartais suspaudžia grid mygtuką iki nulio, todėl jam skiriamas fiksuotas stulpelis. */
+  .chem-row{grid-template-columns:9px minmax(150px,1fr) 88px 112px 112px 34px!important;gap:8px!important;}
+  .chem-row>.row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:5!important;flex:0 0 32px!important;width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;justify-self:end!important;align-items:center!important;justify-content:center!important;}
+}
 /* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
 @media(max-width:760px){
   .surface-group{display:block!important;width:100%!important;min-width:0!important;margin:0 0 12px!important;}
