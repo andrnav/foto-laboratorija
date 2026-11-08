@@ -582,7 +582,6 @@ export default function App() {
   .chem-row>.tank-bar .tank-overflow{margin-left:2px!important;}
 }
 
-`}
 
 /* Chemijos talpos: aiškus kanistras su matomu užpildymo lygiu, vienodas dydis ir tarpai. */
 .chemical-panel .chem-row{
@@ -624,7 +623,7 @@ export default function App() {
   .chemical-panel .chem-row>.row-action{grid-area:action!important;}
 }
 
-</style>
+`}</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       <nav className="main-nav">
