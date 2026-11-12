@@ -923,7 +923,3 @@ function ReportsModal({logs, products=[]}) {
     <p className="form-note">Ataskaita skaičiuojama pagal užregistruotus sandėlio likučio pakeitimus. Pradiniai likučiai ir prekės sukūrimas be likučio judėjimo istorijos į sumas neįtraukiami.</p>
   </div>;
 }
-
-/* Koregavimo lange išsaugojimas pateikiamas iškart po veiksmų pasirinkimo. */
-.adjust-save-top{width:100%;margin:0 0 4px;position:sticky;top:0;z-index:3;box-shadow:0 3px 10px rgba(20,40,28,.10)}
-.adjust-form .numeric-entry{font-size:16px!important;touch-action:manipulation}
