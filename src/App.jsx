@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  Layers3, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode, PlusCircle,
+  Layers, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode,
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
   ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
@@ -15,7 +15,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const NAV = [
-  { id: "photo", label: "Foto medžiagos", icon: PaperBagIcon, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
+  { id: "photo", label: "Foto medžiagos", icon: Layers, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
   { id: "wide", label: "Plačiaformatė spauda", icon: Printer, sections: [{id:"paper",label:"Popierius"},{id:"ink",label:"Rašalas"},{id:"other",label:"Kita"}] },
   { id: "sublimation", label: "Sublimacija", icon: Coffee, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
   { id: "framing", label: "Rėminimas", icon: Images, sections: [{id:"framing_materials",label:"Rėminimo medžiagos"},{id:"bases",label:"Pagrindai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
@@ -624,11 +624,8 @@ export default function App() {
         {NAV.map(item => { const Icon=item.icon; return <button key={item.id} className={`nav-item ${active===item.id?"selected":""}`} onClick={()=>{setActive(item.id);setMobileMenu(false);}}><Icon size={21}/><span>{item.label}</span><small>{categoryCounts[item.id]||0}</small></button>; })}
       </nav>
       <div className="nav-divider"></div>
-      <div className="nav-caption">Sandėlio veiksmai</div>
       <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
-      <button className="nav-item" onClick={()=>setModal({type:"adjust",mode:"add"})}><PlusCircle size={21}/><span>Likučių koregavimas</span></button>
-      {isAdmin&&<button className="nav-item" onClick={()=>setModal({type:"product"})}><Package size={21}/><span>Pridėti prekę</span></button>}
-      <div className="nav-divider"></div>
+      <div className="nav-divider nav-divider-spaced"></div>
       <button className="nav-item" onClick={()=>setModal({type:"history"})}><History size={21}/><span>Istorija</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"reports"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos</span></button>
       <button className="nav-item" onClick={()=>flash("Nustatymų skiltis bus išplėsta vėlesniame etape.")}><Settings size={21}/><span>Nustatymai</span></button>
@@ -640,7 +637,7 @@ export default function App() {
     {mobileMenu && <button className="scrim" onClick={()=>setMobileMenu(false)} aria-label="Uždaryti meniu"/>}
     <main className="main-content">
       <header className="topbar">
-        <div className="title-wrap"><button className="mobile-menu-button icon-button" onClick={()=>setMobileMenu(true)}><Menu size={23}/></button><div className="title-icon"><Layers3 size={30}/></div><div><h1>{pageTitle}</h1><p>Sandėlio likučiai ir medžiagų valdymas</p></div></div>
+        <div className="title-wrap"><button className="mobile-menu-button icon-button" onClick={()=>setMobileMenu(true)}><Menu size={23}/></button><div className="title-icon"><Layers size={30}/></div><div><h1>{pageTitle}</h1><p>Sandėlio likučiai ir medžiagų valdymas</p></div></div>
         <div className="top-meta"><button className="refresh-top-button" onClick={refreshProducts}><RefreshCw size={17}/> Atnaujinti</button><div className="updated"><RefreshCw size={19}/><div><small>Paskutinis pakeitimas šioje skiltyje</small><b>{categoryLastUpdated(products, logs, active) ? shortTime(categoryLastUpdated(products, logs, active)) : "Pakeitimų nėra"}</b></div></div><div className="date-meta"><div className="clock-calendar-icon"><CalendarDays size={43} strokeWidth={2.2}/></div><div className="clock-date-copy"><b>{clockParts(clockNow).weekday}</b><small>{clockParts(clockNow).date}</small></div><div className="clock-divider" aria-hidden="true"></div><div className="clock-time">{clockParts(clockNow).time}</div></div></div>
       </header>
 
@@ -658,7 +655,7 @@ export default function App() {
       {active === "photo" ? <>
         <div className="inventory-grid">
           <section className="panel paper-panel">
-            <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Layers3 size={23}/></span><div><h2>Foto popierius</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"paper"})}><Plus size={16}/> Pridėti</button>}</div>
+            <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Layers size={23}/></span><div><h2>Foto popierius</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"paper"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="paper-table">
               <div className="table-head paper-head"><span>Paviršius</span><span>Plotis</span><span>Kodas</span><span>Likutis / Min.</span><span className="actions-head">Veiksmai</span></div>
               {["Glossy","Lustre","Silk"].map(surface=>{
@@ -727,9 +724,6 @@ export default function App() {
   </div>;
 }
 
-function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
-}
 function StockBadge({p}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper") {
