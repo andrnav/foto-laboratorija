@@ -728,7 +728,7 @@ export default function App() {
       <footer className="footer"><span>FOTO LABORATORIJA · Sandėlio sistema</span><span>{user&&isAdmin?"Administratoriaus režimas":user&&isEmployee?"Darbuotojo režimas":"Viešas peržiūros režimas"} · Laikas: Lietuva</span></footer>
     </main>
 
-    <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);}}><Icon size={19}/><span>{item.id==="photo"?"Medžiagos":item.id==="wide"?"Spauda":item.id==="sublimation"?"Sublimacija":item.id==="framing"?"Rėminimas":item.id==="subframes"?"Poremiai":item.id==="wall_decor"?"Wall decor":"Kitos"}</span></button>})}</nav>
+    <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);}}><Icon size={19}/><span>{item.id==="photo"?"Foto":item.id==="wide"?"Plati":item.id==="sublimation"?"Sublimacija":item.id==="framing"?"Rėminimas":item.id==="subframes"?"Poremiai":item.id==="wall_decor"?"Wall decor":"Kitos"}</span></button>})}</nav>
 
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
