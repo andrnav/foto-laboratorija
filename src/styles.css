@@ -456,3 +456,8 @@
   .modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:12px;}
   .form-stack>.primary-button{position:sticky;bottom:0;z-index:3;width:100%;margin-top:2px;padding:14px;background:var(--green);box-shadow:0 -8px 14px #ffffffed;}
 }
+
+/* Koregavimo lange išsaugojimas pateikiamas iškart po veiksmų pasirinkimo. */
+.adjust-save-top{width:100%;margin:0 0 4px;position:sticky;top:0;z-index:3;box-shadow:0 3px 10px rgba(20,40,28,.10)}
+.adjust-form .numeric-entry{font-size:16px!important;touch-action:manipulation}
+
