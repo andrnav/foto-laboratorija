@@ -417,6 +417,11 @@ export default function App() {
 .generic-row>:first-child b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
 .generic-row .row-actions{display:flex!important;gap:5px!important;justify-content:flex-end!important;white-space:nowrap!important}
 .chem-row{border-bottom:1px solid #e2eae4}
+/* Prisijungimo mygtukas neprisijungusiam vartotojui rodomas iškart po logotipu. */
+.sidebar-login-top{margin:14px 16px 8px!important;width:calc(100% - 32px)!important;justify-content:center!important}
+.stock-quantity-button{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;line-height:inherit;padding:0;cursor:pointer;text-align:left}
+.stock-quantity-button:hover{text-decoration:underline;text-underline-offset:3px}
+.stock-quantity-button:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:3px}
 /* Užsakomų medžiagų eilutė: pavadinimas ir likutis arčiau, be tuščios juostos. */
 .order-item{display:grid!important;grid-template-columns:7px minmax(0,max-content) max-content!important;justify-content:start!important;align-items:center!important;gap:14px!important;padding:10px 12px!important;min-width:0!important}
 .order-item>div:nth-child(2){min-width:0!important;width:min(620px,52vw)!important}
@@ -632,6 +637,7 @@ export default function App() {
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
+      {!user && <button className="login-button sidebar-login-top" onClick={()=>setModal({type:"login"})}><LockKeyhole size={18}/><span>Prisijungti</span></button>}
       <nav className="main-nav">
         {NAV.map(item => { const Icon=item.icon; return <button key={item.id} className={`nav-item ${active===item.id?"selected":""}`} onClick={()=>{setActive(item.id);setMobileMenu(false);}}><Icon size={21}/><span>{item.label}</span><small>{categoryCounts[item.id]||0}</small></button>; })}
       </nav>
@@ -645,8 +651,7 @@ export default function App() {
       <button className="nav-item" onClick={()=>setModal({type:"reports"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos</span></button>
       <button className="nav-item" onClick={()=>flash("Nustatymų skiltis bus išplėsta vėlesniame etape.")}><Settings size={21}/><span>Nustatymai</span></button>
       <div className="sidebar-bottom">
-        {user && canManageStock ? <><div className="admin-badge"><UserRound size={18}/><div><b>{isAdmin ? "Administratorius" : "Darbuotojas"}</b><small>{user.email}</small></div></div><button className="nav-item" onClick={signOut}><LogOut size={20}/><span>Atsijungti</span></button></>
-          : <button className="login-button" onClick={()=>setModal({type:"login"})}><LockKeyhole size={18}/><span>Prisijungti</span></button>}
+        {user && canManageStock && <><div className="admin-badge"><UserRound size={18}/><div><b>{isAdmin ? "Administratorius" : "Darbuotojas"}</b><small>{user.email}</small></div></div><button className="nav-item" onClick={signOut}><LogOut size={20}/><span>Atsijungti</span></button></>}
       </div>
     </aside>
     {mobileMenu && <button className="scrim" onClick={()=>setMobileMenu(false)} aria-label="Uždaryti meniu"/>}
@@ -658,7 +663,7 @@ export default function App() {
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
         <div className="panel-heading"><div className="panel-title"><span className={`heading-icon ${orderItems.length ? "red-icon" : "green-icon"}`}><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className={`pill-count ${orderItems.length ? "count-red" : "count-green"}`}>{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -742,7 +747,7 @@ export default function App() {
 function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
 }
-function StockBadge({p}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
+function StockBadge({p, onQuantityClick}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{onQuantityClick ? <button type="button" className="stock-quantity-button" onClick={onQuantityClick} title="Spauskite, jei norite koreguoti likutį">{fmt(p.quantity)} {unit}</button> : <>{fmt(p.quantity)} {unit}</>}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper") {
     const tones = { Glossy: "#eff9ef", Lustre: "#eff7ff", Silk: "#fff2f6" };
