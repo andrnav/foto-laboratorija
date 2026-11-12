@@ -448,3 +448,11 @@
 
 /* Septynios pagrindinės skiltys mobiliajame meniu */
 @media(max-width:760px){.mobile-bottom-nav{grid-template-columns:repeat(7,minmax(0,1fr));padding-left:3px;padding-right:3px}.mobile-bottom-nav button span{font-size:8px;letter-spacing:-.2px}.mobile-bottom-nav button{gap:3px;padding-left:1px;padding-right:1px}}
+
+/* Mobiliajame koregavimo lange išsaugojimo mygtukas lieka pasiekiamas. */
+@media(max-width:760px){
+  .modal{display:flex;flex-direction:column;overflow:hidden;max-height:calc(100dvh - 12px);}
+  .modal-header{flex:0 0 auto;}
+  .modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:12px;}
+  .form-stack>.primary-button{position:sticky;bottom:0;z-index:3;width:100%;margin-top:2px;padding:14px;background:var(--green);box-shadow:0 -8px 14px #ffffffed;}
+}
