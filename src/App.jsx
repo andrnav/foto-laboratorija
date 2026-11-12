@@ -3,10 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  Layers3, Printer, CupSoda, Frame, Box, QrCode, PlusCircle,
+  Layers3, Printer, CupSoda, Frame, Box, QrCode, PlusCircle, MinusCircle,
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
-  ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
+  ChevronDown, ChevronRight, Plus, Minus, ScanLine, ShieldCheck, AlertTriangle,
   Download, Trash2, LockKeyhole, CalendarDays
 } from "lucide-react";
 
@@ -18,41 +18,18 @@ const NAV = [
   { id: "photo", label: "Foto medžiagos", icon: Layers3, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
   { id: "wide", label: "Plačiaformatė spauda", icon: Printer, sections: [{id:"paper",label:"Popierius"},{id:"ink",label:"Rašalas"},{id:"other",label:"Kita"}] },
   { id: "sublimation", label: "Sublimacija", icon: CupSoda, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
-  { id: "framing", label: "Rėminimas", icon: Frame, sections: [{id:"framing_materials",label:"Rėminimo medžiagos"},{id:"bases",label:"Pagrindai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
-  { id: "subframes", label: "Poremiai", icon: Layers3, sections: [{id:"other",label:"Poremiai"}] },
-  { id: "frames", label: "Rėmeliai", icon: Frame, sections: [{id:"other",label:"Rėmeliai"}] },
-  { id: "other", label: "Kita", icon: Box, sections: [{id:"other",label:"Kita"}] },
+  { id: "framing", label: "Rėminimas", icon: Frame, sections: [{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
+  // Atskira meniu skiltis, tačiau duomenų bazėje poremiai lieka category="framing".
+  { id: "poremai", label: "Poremiai", icon: Frame, sections: [{id:"subframes",label:"Poremiai"}] },
+  { id: "other", label: "Kitos medžiagos", icon: Box, sections: [{id:"other",label:"Kita"}] },
 ];
 const SUBCATEGORY_LABELS = Object.fromEntries(NAV.flatMap(n => n.sections.map(s => [`${n.id}:${s.id}`, s.label])));
+SUBCATEGORY_LABELS["framing:subframes"] = "Poremiai";
+function isPoremis(p) { return p?.category === "framing" && p?.subcategory === "subframes"; }
+function belongsToActiveCategory(p, active) { return active === "poremai" ? isPoremis(p) : p?.category === active && !isPoremis(p); }
+function dbCategory(category) { return category === "poremai" ? "framing" : category; }
 function subcategoryLabel(category, subcategory) { return SUBCATEGORY_LABELS[`${category}:${subcategory || "other"}`] || "Kita"; }
-function chemicalTone(name="") {
-  const n=String(name).toLowerCase();
-  if (n.includes("developer") || /\bcd\b/.test(n)) return "blue";
-  if (n.includes("bleach") || /\bbf\b/.test(n)) return "red";
-  if (n.includes("stabilizer") || /\bstb\b/.test(n)) return "yellow";
-  return "green";
-}
-const INK_ORDER = ["magenta","orange","cyan","light black","yellow","light magenta","black","light cyan"];
-function normalizedInkName(name="") {
-  const n=String(name).toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ").trim();
-  // Ilgesnius pavadinimus tikriname pirmiau, kad „Light Cyan“ netaptų „Cyan“.
-  return [...INK_ORDER].sort((a,b)=>b.length-a.length).find(color => n===color || n.includes(color)) || n;
-}
-function inkHex(name="") {
-  const n=normalizedInkName(name);
-  const colors={magenta:"#d62978",orange:"#f28c28",cyan:"#00a6d6","light black":"#8b9299",yellow:"#f2d21b","light magenta":"#f9cfe0",black:"#252525","light cyan":"#c8eff8"};
-  return colors[n] || "#a0a0a0";
-}
-function isInkProduct(p) { return Boolean(p) && (p.kind==="ink" || p.subcategory==="ink" || (p.category==="wide" && INK_ORDER.some(c=>normalizedInkName(p.name)===c))); }
-function inkSortKey(p) {
-  const n=String(p.name||"").toLowerCase().replace(/[_-]+/g," ").trim();
-  const i=INK_ORDER.indexOf(n);
-  return i < 0 ? 100 : i;
-}
-function productDescription(p) { return p.description ? <small className="product-description" style={{display:"block",fontSize:"12px",fontWeight:500,color:"#65776c",opacity:1,marginTop:3,lineHeight:1.25}}>{p.description}</small> : null; }
-function ProductName({p}) {
-  return <div className={isInkProduct(p) ? "ink-product-name" : undefined}>{isInkProduct(p)&&<span className="ink-color-swatch" aria-hidden="true" style={{display:"inline-block",width:34,height:25,minWidth:34,borderRadius:"6px",background:inkHex(p.name),border:"2px solid #ffffff",boxShadow:"0 0 0 1px #64756b88"}}/>}<b>{displayName(p)}</b>{productDescription(p)}</div>;
-}
+const CHEMICAL_COLORS = { "CD Developer": "blue", "BF Bleach Fix": "red", "BF Bleach Fix A": "red", "BF Bleach Fix B": "red", "STB Super Stabilizer": "yellow" };
 const PAPER_COLORS = { Glossy: "green", Lustre: "blue", Silk: "pink" };
 const PRODUCT_PALETTE = [
   {name:"Žalia",value:"#e3f5e7"},{name:"Mėlyna",value:"#e2efff"},{name:"Geltona",value:"#fff4cc"},
@@ -74,6 +51,12 @@ const STARTER = [
 ];
 
 function fmt(n) { return Number(n ?? 0).toLocaleString("lt-LT", { maximumFractionDigits: 2 }); }
+function dateTime(d = new Date()) {
+  const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
+  const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
+  const time = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).format(d);
+  return `${date}, ${weekday} ${time}`;
+}
 function clockParts(d = new Date()) {
   const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
   const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
@@ -87,26 +70,20 @@ function displayName(p) { return p.kind === "paper" ? `${p.surface} ${String(p.w
 function chemicalSortKey(name="") {
   const n=name.toLowerCase();
   if (n.includes("cd") || n.includes("developer")) return 0;
-  if (n.includes("bf") || n.includes("bleach fix")) {
-    // A+B pakuotė rodoma po atskirų A ir B pozicijų.
-    if (n.includes("a+b") || n.includes("a + b") || n.includes("a ir b")) return 2;
-    if (n.includes("bleach fix b")) return 1;
-    if (n.includes("bleach fix a")) return 0.5;
-    return 1.5;
-  }
-  if (n.includes("stb") || n.includes("stabilizer")) return 3;
-  return 4;
+  if (n.includes("bf") || n.includes("bleach fix")) return 1;
+  if (n.includes("stb") || n.includes("stabilizer")) return 2;
+  return 3;
 }
 
 function categoryLastUpdated(products, logs, active) {
-  const categoryForActive = active === "photo" ? "photo" : active;
+  const matches = p => active === "poremai" ? isPoremis(p) : p?.category === active && !isPoremis(p);
   const candidates = [];
   for (const p of products || []) {
-    if (p.category === categoryForActive && p.updated_at) candidates.push(new Date(p.updated_at));
+    if (matches(p) && p.updated_at) candidates.push(new Date(p.updated_at));
   }
   for (const log of logs || []) {
-    const category = log.products?.category || log.category;
-    if (category === categoryForActive && log.created_at) candidates.push(new Date(log.created_at));
+    const product = log.products || products.find(p => p.id === log.product_id);
+    if (matches(product) && log.created_at) candidates.push(new Date(log.created_at));
   }
   const valid = candidates.filter(d => Number.isFinite(d.getTime()));
   return valid.length ? new Date(Math.max(...valid.map(d => d.getTime()))) : null;
@@ -129,8 +106,10 @@ export default function App() {
   const [loading, setLoading] = useState(configured);
   const [notice, setNotice] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [openSections, setOpenSections] = useState({paper:true,chem:true,history:false});
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [scannerRunning, setScannerRunning] = useState(false);
   const scannerRef = useRef(null);
   const scannerInstance = useRef(null);
   const scanInProgress = useRef(false);
@@ -207,14 +186,15 @@ export default function App() {
     return { isAdmin: admin, isEmployee: employee, error: adminError || employeeError };
   }
 
-  const visibleProducts = useMemo(() => products.filter(p => p.category === active), [products, active]);
+  const visibleProducts = useMemo(() => products.filter(p => belongsToActiveCategory(p, active)), [products, active]);
   const papers = visibleProducts.filter(p => p.kind === "paper");
   const chemicals = visibleProducts.filter(p => p.kind === "chemical").slice().sort((a,b) => chemicalSortKey(a.name)-chemicalSortKey(b.name) || a.name.localeCompare(b.name,"lt"));
-  const orderItems = products.filter(p => p.category === active && Number(p.quantity) < Number(p.min_quantity)).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
-  const activeLogs = logs.filter(log => (log.products?.category || products.find(p => p.id === log.product_id)?.category) === active);
+  const orderItems = products.filter(p => belongsToActiveCategory(p, active) && Number(p.quantity) < Number(p.min_quantity)).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
+  const activeLogs = logs.filter(log => belongsToActiveCategory(log.products || products.find(p => p.id === log.product_id), active));
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
   function flash(msg) { setNotice(msg); window.setTimeout(() => setNotice(""), 4500); }
+  function toggleSection(key) { setOpenSections(s => ({...s,[key]:!s[key]})); }
 
   async function signIn(email, password) {
     if (!supabase) return flash("Pirmiausia sukonfigūruokite Supabase nustatymus (.env).");
@@ -261,7 +241,7 @@ export default function App() {
     if (details) {
       const { error: detailsError } = await supabase.from("products").update({
         min_quantity: Number(details.min_quantity), code: details.code.trim() || null,
-        color: details.color || null, description: details.description || null, tank_size: details.tank_size || "large"
+        color: details.color || null
       }).eq("id", product.id);
       if (detailsError) { setBusy(false); flash(`Prekės duomenų išsaugoti nepavyko: ${detailsError.message}`); return; }
     }
@@ -277,13 +257,12 @@ export default function App() {
     if (!isAdmin) return flash("Naujas prekes gali pridėti tik administratorius.");
     if (!supabase) return flash("Duomenų bazė nesukonfigūruota.");
     const row = {
-      category: values.category, subcategory: values.subcategory || "other", kind: values.kind, name: values.name.trim(),
+      category: dbCategory(values.category), subcategory: values.subcategory || "other", kind: values.kind, name: values.name.trim(),
       surface: values.kind === "paper" ? values.surface : null,
       width_cm: values.kind === "paper" ? Number(values.width_cm) : null,
       code: values.code.trim() || null, quantity: Number(values.quantity), min_quantity: Number(values.min_quantity),
       color: values.kind === "paper" || values.kind === "chemical" ? null : (values.color || null),
-      description: values.description?.trim() || null, tank_size: values.kind === "chemical" ? (values.tank_size || "large") : "large",
-      unit: values.kind === "paper" ? "vnt." : (values.subcategory === "ink" ? "%" : (values.unit || "bak."))
+      unit: values.kind === "paper" ? "vnt." : (values.unit || "bak.")
     };
     const { error } = await supabase.from("products").insert(row);
     if (error) flash(`Prekės pridėti nepavyko: ${error.message}`);
@@ -352,250 +331,30 @@ export default function App() {
             scanInProgress.current = true;
             try { await scanner.stop(); } catch {}
             scannerInstance.current = null;
+            setScannerRunning(false);
             setModal(null);
             await scanCode(decoded, true);
           }, () => {});
+        setScannerRunning(true);
       } catch (e) { flash(`Nepavyko paleisti kameros: ${e.message || e}`); }
     }, 250);
   }
   async function stopScanner() {
     if (scannerInstance.current) { try { await scannerInstance.current.stop(); } catch {} scannerInstance.current = null; }
-    setModal(null);
+    setScannerRunning(false); setModal(null);
   }
 
   const pageTitle = activeLabel;
-  const categoryProducts = products.filter(p => p.category === active);
-  const categoryCounts = products.reduce((a,p) => ({...a,[p.category]:(a[p.category]||0)+1}),{});
+  const categoryProducts = products.filter(p => belongsToActiveCategory(p, active));
+  const categoryPaper = categoryProducts.filter(p => p.kind === "paper");
+  const categoryChem = categoryProducts.filter(p => p.kind !== "paper");
+  const categoryCounts = products.reduce((a,p) => {
+    const key = isPoremis(p) ? "poremai" : p.category;
+    a[key] = (a[key] || 0) + 1;
+    return a;
+  },{});
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
-    <style>{`
-/* Kompaktiškas likučio vaizdas: skaičius pirmas, be pasikartojančio „DABAR“. */
-.stock-unused{display:inline-block!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#718078!important;font-size:13px!important;font-weight:600!important;white-space:nowrap!important}
-.stock-badge{display:inline-flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;min-width:0!important;width:max-content!important;max-width:100%!important;padding:6px 9px!important;border:1px solid #dfe7e1!important;border-left:3px solid #78a98a!important;border-radius:7px!important;background:#f5f7f5!important;box-shadow:none!important;white-space:nowrap!important;color:#263b2d!important}
-.stock-badge strong{font-size:15px!important;line-height:1.15!important;font-weight:750!important;color:#203b2b!important}
-.stock-badge span{font-size:10px!important;line-height:1.15!important;color:#66776c!important;opacity:1!important}
-.stock-badge.low{background:#fff7f6!important;border-color:#f0d8d5!important;border-left-color:#d86b66!important}
-.stock-badge.low strong{color:#b83f3f!important}
-.stock-badge.low span{color:#9d6662!important}
-.stock-badge.ok{background:#f5f7f5!important}
-.generic-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(90px,120px) 116px 64px!important;gap:9px!important;align-items:center!important;padding:8px 10px!important;min-width:0!important;border-bottom:1px solid #e7ece8!important}
-.generic-row>:first-child{min-width:0!important;max-width:100%!important}
-.generic-row>:first-child b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
-.generic-row .row-actions{display:flex!important;gap:5px!important;justify-content:flex-end!important;white-space:nowrap!important}
-.chem-row{border-bottom:1px solid #e2eae4}
-/* Užsakomų medžiagų eilutė: pavadinimas ir likutis arčiau, be tuščios juostos. */
-.order-item{display:grid!important;grid-template-columns:7px minmax(0,max-content) max-content!important;justify-content:start!important;align-items:center!important;gap:14px!important;padding:10px 12px!important;min-width:0!important}
-.order-item>div:nth-child(2){min-width:0!important;width:min(620px,52vw)!important}
-.order-item>div:nth-child(2)>b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
-.order-item .stock-badge{justify-self:end!important}
-.order-item .code-copy,.order-item .code-no-code{margin-top:3px!important}
- .order-list{gap:5px!important}
-/* Tarpinis ekrano plotis: nebespaudžiame dviejų lentelių į ankštas kolonas. */
-@media (min-width:761px) and (max-width:1250px){
-  .subcategory-grid{grid-template-columns:minmax(0,1fr)!important;gap:14px!important}
-  .subcategory-block{min-width:0!important;width:100%!important}
-  .generic-row{grid-template-columns:minmax(180px,1fr) minmax(105px,145px) 116px 64px!important;gap:10px!important}
-  .generic-row>:first-child{min-width:0!important}
-  .generic-row>:first-child b{overflow-wrap:break-word!important;word-break:normal!important}
-  .generic-row .code-copy{white-space:nowrap!important;max-width:100%!important}
-}
-/* Rašalo eilutėje spalvos žymeklis ir pavadinimas visada vienoje eilėje. */
-.ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;min-width:0!important;width:100%!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important}
-.ink-product-name>b{display:block!important;flex:0 1 auto!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;font-size:clamp(11px,1vw,15px)!important;line-height:1.15!important;min-width:0!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.ink-product-name .ink-color-swatch{display:block!important;flex:0 0 28px!important;width:28px!important;min-width:28px!important;height:24px!important;margin:0!important}
-/* Rašalo spalva turi būti lengvai atpažįstama ir iš pirmo žvilgsnio. */
-.product-description{color:#455b4d!important;font-weight:600!important;opacity:1!important}
-.surface-label{font-size:25px!important;font-weight:800!important;letter-spacing:-.3px!important;box-sizing:border-box!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-align:center!important;overflow-wrap:anywhere!important}
-.surface-rows .paper-row{margin-bottom:7px!important;border-radius:9px!important}
-.surface-rows{padding-bottom:3px!important}
-@media(max-width:760px){
-/* Mobiliajame vaizde grąžiname koregavimo veiksmus foto popieriui ir chemijai. */
-.paper-row .row-actions{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;position:relative!important;z-index:2!important;}
-.paper-row .row-actions .row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;flex:0 0 30px!important;width:30px!important;height:30px!important;min-width:30px!important;padding:5px!important;align-items:center!important;justify-content:center!important;}
-.chem-row>.row-action{display:inline-flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;position:relative!important;z-index:2!important;width:30px!important;height:30px!important;min-width:30px!important;padding:5px!important;align-items:center!important;justify-content:center!important;}
-.surface-label{font-size:clamp(11px,4vw,17px)!important;line-height:1.1!important;padding:8px 3px!important;white-space:nowrap!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important;overflow-wrap:normal!important;word-break:keep-all!important;letter-spacing:-.2px!important}
-.surface-group,.surface-rows,.paper-table{min-width:0!important;max-width:100%!important}
-.chem-row{display:grid!important;grid-template-columns:10px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto!important;gap:5px 8px!important;padding:9px 7px!important;align-items:center!important}
-.chem-row>.chem-dot{grid-column:1;grid-row:1 / span 3;align-self:start;margin-top:4px}
-.chem-row>.chem-name{grid-column:2;grid-row:1;min-width:0}
-.chem-row>.chem-name>b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.18}
-.chem-row>.stock-badge{grid-column:3;grid-row:1;justify-self:end;align-self:center;white-space:nowrap}
-.chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start;font-size:12px!important}
-.chem-row>.tank-bar{grid-column:2 / 4;grid-row:3;justify-self:start;margin:2px 0 0 0;transform:scale(.88);transform-origin:left center}
-.chem-row>.row-action{grid-column:3;grid-row:2;justify-self:end}
-.order-item{grid-template-columns:6px minmax(0,1fr) max-content!important;gap:9px!important;padding:8px 7px!important}
-.order-item>div:nth-child(2){width:min(48vw,320px)!important}.order-item .stock-badge{padding:5px 7px!important}
-.order-item>div:nth-child(2)>b{font-size:13px!important}
-.ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
-}
-/* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
-@media(max-width:760px){
-  .surface-group{display:block!important;width:100%!important;min-width:0!important;margin:0 0 12px!important;}
-  .surface-label{position:relative!important;display:flex!important;width:100%!important;height:auto!important;min-height:38px!important;margin:0 0 7px!important;padding:8px 12px!important;border-radius:10px!important;font-size:clamp(15px,4.2vw,18px)!important;line-height:1.15!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;justify-content:flex-start!important;text-align:left!important;}
-  .surface-rows{display:flex!important;flex-direction:column!important;gap:8px!important;width:100%!important;min-width:0!important;}
-  /* Foto popierius: mobiliajame paliekamas tik redagavimas, iškart prie likučio. */
-  .surface-rows .paper-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto 34px!important;grid-template-rows:auto auto!important;grid-template-areas:"width stock actions" "code code code"!important;align-items:center!important;column-gap:7px!important;row-gap:5px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:9px 8px!important;border:1px solid #e4ebe6!important;border-radius:10px!important;background:#fff!important;overflow:hidden!important;}
-  .paper-row .paper-width{grid-area:width!important;min-width:0!important;font-size:14px!important;font-weight:700!important;line-height:1.2!important;white-space:nowrap!important;}
-  .paper-row .code-copy,.paper-row .code-no-code{grid-area:code!important;justify-self:start!important;min-width:0!important;max-width:100%!important;font-size:12px!important;white-space:nowrap!important;}
-  .paper-row .stock-badge{grid-area:stock!important;justify-self:end!important;align-self:center!important;max-width:100%!important;white-space:nowrap!important;}
-  .paper-row .row-actions{grid-area:actions!important;display:flex!important;position:static!important;z-index:1!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;justify-content:flex-end!important;align-items:center!important;gap:0!important;width:34px!important;margin:0!important;padding:0!important;}
-  .paper-row .row-actions .row-action{display:none!important;}
-  .paper-row .row-actions .row-action:last-child{position:static!important;display:inline-flex!important;flex:0 0 32px!important;width:32px!important;height:32px!important;min-width:32px!important;max-width:32px!important;padding:5px!important;}
-  /* Chemija: likutis ir vienintelis redagavimo mygtukas vienoje eilėje; kodas ir bakai žemiau. */
-  .chem-list{display:flex!important;flex-direction:column!important;gap:7px!important;min-width:0!important;}
-  .chem-row{display:grid!important;grid-template-columns:9px minmax(0,1fr) auto 34px!important;grid-template-rows:auto auto auto!important;gap:5px 7px!important;align-items:center!important;padding:9px 8px!important;border:1px solid #e4ebe6!important;border-radius:10px!important;background:#fff!important;min-width:0!important;box-sizing:border-box!important;}
-  .chem-row>.chem-dot{grid-column:1!important;grid-row:1 / span 3!important;align-self:stretch!important;margin:0!important;width:8px!important;border-radius:8px!important;}
-  .chem-row>.chem-name{grid-column:2 / 5!important;grid-row:1!important;min-width:0!important;overflow:hidden!important;}
-  .chem-row>.chem-name>b{display:block!important;font-size:14px!important;line-height:1.2!important;white-space:normal!important;overflow-wrap:anywhere!important;}
-  .chem-row>.stock-badge{grid-column:3!important;grid-row:2!important;justify-self:end!important;white-space:nowrap!important;}
-  .chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2!important;grid-row:2!important;justify-self:start!important;max-width:100%!important;font-size:12px!important;}
-  .chem-row>.row-action{grid-column:4!important;grid-row:2!important;justify-self:end!important;position:static!important;width:32px!important;height:32px!important;min-width:32px!important;padding:5px!important;}
-  .chem-row>.tank-bar{grid-column:2 / 5!important;grid-row:3!important;justify-self:start!important;margin:2px 0 0!important;transform:scale(.82)!important;transform-origin:left center!important;max-width:100%!important;}
-  .chem-legend{display:flex!important;flex-wrap:wrap!important;gap:6px 10px!important;padding:8px 4px!important;font-size:11px!important;}
-}
-
-/* FOTO MEDŽIAGOS: atskiras išdėstymas, kad chemija nebeišlįstų už kortelės ribų. */
-.inventory-grid{min-width:0!important;align-items:start!important;}
-.inventory-grid>.panel{min-width:0!important;width:100%!important;max-width:100%!important;}
-/* Vidutiniuose desktop pločiuose abi kortelės dedamos viena po kita. */
-@media (min-width:761px) and (max-width:1640px){
-  .inventory-grid{grid-template-columns:minmax(0,1fr)!important;gap:16px!important;}
-  .chemical-panel .chem-row{grid-template-columns:10px minmax(180px,1.4fr) minmax(90px,.7fr) minmax(105px,.8fr) minmax(100px,.8fr) 36px!important;gap:9px!important;padding:12px 14px!important;}
-  .chemical-panel .chem-row>.tank-bar{max-width:120px!important;overflow:hidden!important;}
-}
-/* Platesniuose ekranuose kortelės vėl greta, bet chemijos stulpeliai turi ribas. */
-@media (min-width:1641px){
-  .inventory-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)!important;gap:16px!important;}
-  .chemical-panel .chem-row{grid-template-columns:9px minmax(125px,1.2fr) minmax(72px,.7fr) minmax(78px,.65fr) minmax(88px,.75fr) 34px!important;gap:7px!important;padding:10px 8px!important;}
-  .chemical-panel .chem-row>.tank-bar{max-width:100px!important;overflow:hidden!important;}
-  .chemical-panel .chem-row .stock-badge{padding:5px 7px!important;}
-}
-/* Popieriaus plotis ryškesnis, o visos trys paviršių grupės gauna subtilų spalvinį foną. */
-.paper-row .paper-width{font-size:15px!important;font-weight:800!important;letter-spacing:-.15px!important;color:#20382a!important;}
-.paper-row .stock-badge{margin-left:7px!important;}
-.surface-rows .paper-row{border:1px solid transparent!important;}
-.surface-group:has(.surface-label.green) .paper-row{background:#eff9ef!important;border-color:#d9efd9!important;}
-.surface-group:has(.surface-label.blue) .paper-row{background:#eff7ff!important;border-color:#d9eafb!important;}
-.surface-group:has(.surface-label.pink) .paper-row{background:#fff2f6!important;border-color:#f5dfe8!important;}
-@media(max-width:760px){
-  .surface-group{display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;gap:7px!important;align-items:stretch!important;margin:0 0 12px!important;}
-  .surface-label{grid-column:1!important;grid-row:1!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important;display:flex!important;align-items:center!important;justify-content:center!important;width:42px!important;min-width:42px!important;height:100%!important;min-height:100%!important;margin:0!important;padding:8px 5px!important;border-radius:10px!important;font-size:15px!important;letter-spacing:0!important;white-space:nowrap!important;text-overflow:clip!important;}
-  .surface-rows{grid-column:2!important;grid-row:1!important;min-width:0!important;gap:7px!important;}
-  .surface-rows .paper-row{background:inherit!important;}
-  .paper-row .paper-width{font-size:14px!important;font-weight:800!important;}
-  .paper-row .stock-badge{margin-left:5px!important;}
-  .chemical-panel .chem-row{grid-template-columns:9px minmax(0,1fr) auto 34px!important;}
-}
-/* Chemijos eilutės: atskiri stulpeliai nebeleidžia bakų ikonoms užlipti ant likučio ar pavadinimo. */
-@media (min-width:761px){
-  .chemical-panel .chem-row{
-    display:grid!important;
-    grid-template-columns:9px minmax(135px,1fr) minmax(76px,auto) minmax(88px,104px) max-content 34px!important;
-    align-items:center!important;
-    gap:8px!important;
-    min-width:0!important;
-    box-sizing:border-box!important;
-    overflow:hidden!important;
-  }
-  .chemical-panel .chem-row>.chem-name,
-  .chemical-panel .chem-row>.code-copy,
-  .chemical-panel .chem-row>.code-no-code,
-  .chemical-panel .chem-row>.tank-bar,
-  .chemical-panel .chem-row>.stock-badge,
-  .chemical-panel .chem-row>.row-action{min-width:0!important;max-width:100%!important;}
-  .chemical-panel .chem-row>.chem-name{overflow:hidden!important;}
-  .chemical-panel .chem-row>.chem-name>b{display:block!important;white-space:normal!important;overflow-wrap:anywhere!important;}
-  .chemical-panel .chem-row>.code-copy{white-space:nowrap!important;}
-  .chemical-panel .chem-row>.tank-bar{width:100%!important;max-width:104px!important;min-width:0!important;overflow:hidden!important;display:flex!important;flex-wrap:nowrap!important;gap:3px!important;}
-  .chemical-panel .chem-row>.stock-badge{justify-self:start!important;width:max-content!important;white-space:nowrap!important;margin:0!important;}
-  .chemical-panel .chem-row>.row-action{justify-self:end!important;}
-}
-/* Skaičiaus žyma foto popieriaus eilutėje turi turėti oro aplink save ir subtilų apvadą. */
-.paper-row .paper-width{display:inline-flex!important;align-items:center!important;width:max-content!important;max-width:100%!important;min-height:34px!important;padding:3px 7px!important;margin:0 4px!important;border:1px solid rgba(105,157,119,.28)!important;border-radius:8px!important;background:rgba(255,255,255,.48)!important;box-sizing:border-box!important;}
-.surface-group:has(.surface-label.blue) .paper-row .paper-width{border-color:rgba(93,153,202,.30)!important;}
-.surface-group:has(.surface-label.pink) .paper-row .paper-width{border-color:rgba(205,125,157,.30)!important;}
-@media(max-width:760px){
-  .paper-row .paper-width{min-height:30px!important;padding:3px 6px!important;margin:0 2px!important;font-size:14px!important;}
-}
-
-/* Desktop chemija: bakų vizualizacija perkeliama į atskirą eilutę,
-   kaip mobiliajame vaizde. Likučiui ir redagavimo mygtukui paliekama vieta. */
-@media (min-width:761px){
-  .chemical-panel .chem-row{
-    display:grid!important;
-    grid-template-columns:9px minmax(120px,1.35fr) minmax(76px,.75fr) max-content 34px!important;
-    grid-template-rows:auto auto!important;
-    grid-template-areas:
-      "dot name code stock action"
-      "dot tanks tanks tanks tanks"!important;
-    align-items:center!important;
-    column-gap:9px!important;
-    row-gap:7px!important;
-    min-width:0!important;
-    box-sizing:border-box!important;
-    overflow:hidden!important;
-    padding:11px 10px!important;
-  }
-  .chemical-panel .chem-row>.chem-dot{
-    grid-area:dot!important;
-    align-self:stretch!important;
-    margin:0!important;
-  }
-  .chemical-panel .chem-row>.chem-name{
-    grid-area:name!important;
-    min-width:0!important;
-    max-width:100%!important;
-    overflow:hidden!important;
-  }
-  .chemical-panel .chem-row>.chem-name>b{
-    display:block!important;
-    white-space:normal!important;
-    overflow-wrap:anywhere!important;
-  }
-  .chemical-panel .chem-row>.code-copy,
-  .chemical-panel .chem-row>.code-no-code{
-    grid-area:code!important;
-    justify-self:start!important;
-    min-width:0!important;
-    max-width:100%!important;
-    white-space:nowrap!important;
-  }
-  .chemical-panel .chem-row>.stock-badge{
-    grid-area:stock!important;
-    justify-self:end!important;
-    width:max-content!important;
-    max-width:100%!important;
-    min-width:0!important;
-    white-space:nowrap!important;
-    margin:0!important;
-  }
-  .chemical-panel .chem-row>.row-action{
-    grid-area:action!important;
-    justify-self:end!important;
-    position:relative!important;
-    z-index:2!important;
-    width:34px!important;
-    height:34px!important;
-    min-width:34px!important;
-  }
-  .chemical-panel .chem-row>.tank-bar{
-    grid-area:tanks!important;
-    justify-self:start!important;
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    gap:3px!important;
-    width:max-content!important;
-    max-width:100%!important;
-    min-width:0!important;
-    overflow:hidden!important;
-    margin:0!important;
-    transform:scale(.88)!important;
-    transform-origin:left center!important;
-  }
-}
-
-`}
-</style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       <nav className="main-nav">
@@ -653,7 +412,7 @@ export default function App() {
           <section className="panel chemical-panel">
             <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><FlaskConical size={23}/></span><div><h2>Foto chemija</h2></div></div>{isAdmin && <button className="small-green-button" onClick={()=>setModal({type:"product",kind:"chemical"})}><Plus size={16}/> Pridėti</button>}</div>
             <div className="chem-list">
-              {chemicals.map(p=><div className="chem-row" key={p.id} style={{display:"grid",gridTemplateColumns:"12px minmax(160px,1.4fr) minmax(85px,.7fr) minmax(95px,1fr) minmax(120px,auto) 34px",alignItems:"center",gap:10,padding:"12px 9px",minWidth:0}}><div className={`chem-dot ${chemicalTone(p.name)}`}></div><div className="chem-name" style={{minWidth:0}}><b>{p.name}</b>{productDescription(p)}</div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={chemicalTone(p.name)} small={p.tank_size==="small"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
+              {chemicals.map(p=><div className="chem-row" key={p.id}><div className={`chem-dot ${CHEMICAL_COLORS[p.name]||"green"}`}></div><div className="chem-name"><b>{p.name}</b></div><CopyCode code={p.code} flash={flash}/><TankBar quantity={p.quantity} tone={CHEMICAL_COLORS[p.name]||"green"} small={p.name==="STB Super Stabilizer"}/><StockBadge p={p}/>{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})} aria-label="Koreguoti"><Pencil size={15}/></button>}</div>)}
               {!chemicals.length && <div className="empty-state">Chemijos pozicijų nėra. Administratorius gali pridėti prekę.</div>}
             </div>
             <div className="chem-legend"><span><i className="legend-dot blue"></i>CD Developer</span><span><i className="legend-dot red"></i>BF Bleach Fix A / B</span><span><i className="legend-dot yellow"></i>STB Super Stabilizer</span></div>
@@ -662,17 +421,17 @@ export default function App() {
         <section className="panel category-panel photo-other-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>Kita</h2><p>Kitos foto laboratorijos medžiagos</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:"other",kind:"item"})}><Plus size={16}/> Pridėti</button>}</div>
           <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><div><b>{displayName(p)}</b><small>{p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
             {!categoryProducts.some(p=>(p.subcategory||"other")==="other")&&<div className="empty-state">Kitos foto medžiagos bus rodomos čia.</div>}
           </div>
         </section>
       </> : <section className="panel category-panel">
         <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Medžiagos suskirstytos pagal šios skilties kategorijas</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
         {<div className="subcategory-grid">{NAV.find(n=>n.id===active)?.sections.map(section=>{
-          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort((a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
+          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><div><b>{displayName(p)}</b><small>{p.kind==="ink"?"Rašalo lygis (%)":p.unit||"vnt."}</small></div><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
@@ -692,7 +451,7 @@ export default function App() {
       <footer className="footer"><span>FOTO LABORATORIJA · Sandėlio sistema</span><span>{user&&isAdmin?"Administratoriaus režimas":user&&isEmployee?"Darbuotojo režimas":"Viešas peržiūros režimas"} · Laikas: Lietuva</span></footer>
     </main>
 
-    <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);}}><Icon size={18}/><span>{item.id==="photo"?"Foto":item.id==="wide"?"Spauda":item.id==="sublimation"?"Sublim.":item.id==="framing"?"Rėminimas":item.id==="subframes"?"Poremiai":item.id==="frames"?"Rėmeliai":"Kita"}</span></button>})}</nav>
+    <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);}}><Icon size={19}/><span>{item.id==="photo"?"Medžiagos":item.id==="wide"?"Spauda":item.id==="sublimation"?"Sublimacija":item.id==="framing"?"Rėminimas":item.id==="poremai"?"Poremiai":"Kitos"}</span></button>})}</nav>
 
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
@@ -705,14 +464,9 @@ export default function App() {
   </div>;
 }
 
-function StockBadge({p}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{fmt(p.quantity)} {unit}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
+function StockBadge({p}) { const percent=p.kind==="ink"; return <span className={`stock-badge ${stockTone(p)}`}>{fmt(p.quantity)}{percent?"%":""} <i>/</i> {fmt(p.min_quantity)}{percent?"%":""}</span>; }
 function productRowStyle(p) {
-  if (p.kind === "paper") {
-    const tones = { Glossy: "#eff9ef", Lustre: "#eff7ff", Silk: "#fff2f6" };
-    const borders = { Glossy: "#d9efd9", Lustre: "#d9eafb", Silk: "#f5dfe8" };
-    return { backgroundColor: tones[p.surface] || "#f5f8f5", borderColor: borders[p.surface] || "#e3ebe5" };
-  }
-  if (p.kind === "chemical" || !p.color) return undefined;
+  if (p.kind === "paper" || p.kind === "chemical" || !p.color) return undefined;
   return { backgroundColor: p.color, borderLeft: "3px solid #789985" };
 }
 function CopyCode({code,flash}) {
@@ -722,7 +476,7 @@ function CopyCode({code,flash}) {
   return <button className="code-copy" onClick={copy} title="Kopijuoti prekės kodą"><span>{code}</span>{copied?<Check size={15}/>:<Copy size={15}/>}</button>;
 }
 function ProductRow({p,canManageStock,onAdjust,flash}) {
-  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
+  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
@@ -748,16 +502,14 @@ function LoginForm({onSubmit,busy}) {
   return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit(email,password)}}><label>El. paštas<input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@imone.lt"/></label><label>Slaptažodis<input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary-button" disabled={busy}>{busy?"Jungiamasi…":"Prisijungti"}</button><p className="form-note">Darbuotojai gali keisti likučius ir naudoti QR nuskaitymą. Prekių pridėjimas ir trynimas prieinamas tik administratoriui.</p></form>;
 }
 function ProductForm({category,kind:forcedKind,subcategory:forcedSubcategory,onSubmit,busy}) {
-  const [cat,setCat]=useState(category||"photo");const [subcategory,setSubcategory]=useState(forcedSubcategory || (forcedKind==="paper"?"paper":forcedKind==="chemical"?"chemical":"other"));const [kind,setKind]=useState(forcedKind||(forcedSubcategory==="chemical"?"chemical":forcedSubcategory==="ink"?"ink":forcedSubcategory==="paper"?"paper":"item"));const [name,setName]=useState("");const [description,setDescription]=useState("");const [tankSize,setTankSize]=useState("large");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState(forcedSubcategory==="ink"||forcedKind==="ink"?"%":"bak.");const [color,setColor]=useState("");
-  return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit({category:cat,subcategory,kind:subcategory==="ink"?"ink":kind,name:kind==="paper"?surface:name,surface,width_cm:width,code,quantity:qty,min_quantity:min,unit:subcategory==="ink"?"%":unit,color,description,tank_size:tankSize})}}>
+  const [cat,setCat]=useState(category||"photo");const [subcategory,setSubcategory]=useState(forcedSubcategory || (forcedKind==="paper"?"paper":forcedKind==="chemical"?"chemical":"other"));const [kind,setKind]=useState(forcedKind||"item");const [name,setName]=useState("");const [surface,setSurface]=useState("Glossy");const [width,setWidth]=useState("12.7");const [code,setCode]=useState("");const [qty,setQty]=useState("0");const [min,setMin]=useState("1");const [unit,setUnit]=useState("bak.");const [color,setColor]=useState("");
+  return <form className="form-stack" onSubmit={e=>{e.preventDefault();onSubmit({category:cat,subcategory,kind,name:kind==="paper"?surface:name,surface,width_cm:width,code,quantity:qty,min_quantity:min,unit,color})}}>
     <label>Kategorija<select value={cat} onChange={e=>{const next=NAV.find(n=>n.id===e.target.value);setCat(e.target.value);const first=next?.sections[0]?.id||"other";setSubcategory(first);setKind(e.target.value==="photo"&&first==="paper"?"paper":e.target.value==="photo"&&first==="chemical"?"chemical":first==="ink"?"ink":"item");}}>{NAV.map(n=><option value={n.id} key={n.id}>{n.label}</option>)}</select></label>
-    <label>Medžiagų kategorija<select value={subcategory} onChange={e=>{setSubcategory(e.target.value);if(cat==="photo"&&e.target.value==="paper")setKind("paper");else if(cat==="photo"&&e.target.value==="chemical")setKind("chemical");else setKind(e.target.value==="ink"?"ink":"item");if(e.target.value==="ink"){setUnit("%");setCat("wide");}}}>{(NAV.find(n=>n.id===cat)?.sections||[]).map(section=><option value={section.id} key={section.id}>{section.label}</option>)}</select></label>
+    <label>Medžiagų kategorija<select value={subcategory} onChange={e=>{setSubcategory(e.target.value);if(cat==="photo"&&e.target.value==="paper")setKind("paper");else if(cat==="photo"&&e.target.value==="chemical")setKind("chemical");else setKind(e.target.value==="ink"?"ink":"item");if(e.target.value==="ink")setUnit("%");}}>{(NAV.find(n=>n.id===cat)?.sections||[]).map(section=><option value={section.id} key={section.id}>{section.label}</option>)}</select></label>
     {kind==="paper"?<><label>Paviršius<select value={surface} onChange={e=>setSurface(e.target.value)}><option>Glossy</option><option>Lustre</option><option>Silk</option></select></label><label>Plotis<select value={width} onChange={e=>setWidth(e.target.value)}><option value="12.7">12,7 cm</option><option value="15.2">15,2 cm</option><option value="30.5">30,5 cm</option></select></label></>:<><label>Prekės pavadinimas<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Pvz., papildoma chemija"/></label><label>Matavimo vienetas<select value={unit} onChange={e=>setUnit(e.target.value)}><option value="bak.">bak.</option><option value="vnt.">vnt.</option><option value="l">l</option><option value="kg">kg</option><option value="pak.">pak.</option><option value="rul.">rulonas</option><option value="%">%</option></select></label></>}
-    <label>Aprašymas (nebūtina)<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Pvz., XXL spaudos popierius"/></label>
-    {kind==="chemical"&&<label>Bako dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}
     <label>Prekės kodas (nebūtina)<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Jei yra, įveskite prekės kodą"/></label>
     {kind!=="paper"&&kind!=="chemical"&&<label>Prekės spalva<select value={color} onChange={e=>setColor(e.target.value)}><option value="">Be spalvos</option>{PRODUCT_PALETTE.map(c=><option value={c.value} key={c.value}>{c.name}</option>)}</select></label>}
-    <div className="form-two"><label>{(kind==="ink"||subcategory==="ink")?"Dabartinis lygis (%)":"Dabartinis likutis"}<input type="number" required min="0" step={(kind==="ink"||subcategory==="ink")?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{(kind==="ink"||subcategory==="ink")?"Minimalus lygis (%)":"Minimalus likutis"}<input type="number" required min="0" step={(kind==="ink"||subcategory==="ink")?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={min} onChange={e=>setMin(e.target.value)}/></label></div>
+    <div className="form-two"><label>{kind==="ink"?"Dabartinis lygis (%)":"Dabartinis likutis"}<input type="number" required min="0" max={kind==="ink"?100:undefined} step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{kind==="ink"?"Minimalus lygis (%)":"Minimalus likutis"}<input type="number" required min="0" max={kind==="ink"?100:undefined} step={kind==="ink"?1:kind==="chemical"||unit==="rul."?"0.1":"0.5"} value={min} onChange={e=>setMin(e.target.value)}/></label></div>
     <button className="primary-button" disabled={busy}>{busy?"Saugoma…":"Pridėti prekę"}</button><p className="form-note">Prekės kodas neprivalomas. Jei jį įvesite, jis turi būti unikalus. QR nuskaitymas veikia prekėms, turinčioms kodą.</p>
   </form>;
 }
@@ -766,23 +518,22 @@ function AdjustForm({products,initialProduct,mode:initialMode,isAdmin,onSubmit,b
   const [id,setId]=useState(initialProduct?.id||"");const product=products.find(p=>String(p.id)===String(id));
   const [amount,setAmount]=useState((initialMode||"add")==="set"?String(initialProduct?.quantity??0):"1");
   const [reason,setReason]=useState((initialMode||"add")==="add"?"Papildymas":(initialMode||"add")==="remove"?"Paėmimas":"Likučio perskaičiavimas");
-  const [minQty,setMinQty]=useState(String(initialProduct?.min_quantity??0));const [code,setCode]=useState(initialProduct?.code||"");const [color,setColor]=useState(initialProduct?.color||"");
-  const [description,setDescription]=useState(initialProduct?.description||"");const [tankSize,setTankSize]=useState(initialProduct?.tank_size||"large");
-  function selectProduct(nextId){const p=products.find(x=>String(x.id)===nextId);setId(nextId);setAmount(mode==="set"?String(p?.quantity??0):"1");setMinQty(String(p?.min_quantity??0));setCode(p?.code||"");setColor(p?.color||"");setDescription(p?.description||"");setTankSize(p?.tank_size||"large");}
+  const [minQty,setMinQty]=useState(String(initialProduct?.min_quantity??0));
+  const [code,setCode]=useState(initialProduct?.code||"");
+  const [color,setColor]=useState(initialProduct?.color||"");
+  function selectProduct(nextId){const p=products.find(x=>String(x.id)===nextId);setId(nextId);setAmount(mode==="set"?String(p?.quantity??0):"1");setMinQty(String(p?.min_quantity??0));setCode(p?.code||"");setColor(p?.color||"");}
   function changeMode(next){setMode(next);setAmount(next==="set"?String(product?.quantity??0):"1");setReason(next==="add"?"Papildymas":next==="remove"?"Paėmimas":"Likučio perskaičiavimas");}
   const after=product?(mode==="set"?Number(amount):Number(product.quantity)+(mode==="remove"?-1:1)*Number(amount)):0;
-  return <form className="form-stack" onSubmit={e=>{e.preventDefault();if(!product)return;const n=Number(amount);const delta=mode==="add"?n:mode==="remove"?-n:n;onSubmit(product,delta,reason,mode==="set",isAdmin&&mode==="set"?{min_quantity:minQty,code,color,description,tank_size:tankSize}:null)}}>
+  return <form className="form-stack" onSubmit={e=>{e.preventDefault();if(!product)return;const n=Number(amount);const delta=mode==="add"?n:mode==="remove"?-n:n;onSubmit(product,delta,reason,mode==="set",isAdmin&&mode==="set"?{min_quantity:minQty,code,color}:null)}}>
     <div className="adjust-mode-switch" role="group" aria-label="Likučio veiksmas"><button type="button" className={mode==="add"?"active":""} onClick={()=>changeMode("add")}><Plus size={15}/> Pridėti</button><button type="button" className={mode==="remove"?"active":""} onClick={()=>changeMode("remove")}><Minus size={15}/> Atimti</button><button type="button" className={mode==="set"?"active":""} onClick={()=>changeMode("set")}><Pencil size={15}/> Koreguoti</button></div>
-    <label>Prekė<select required value={id} onChange={e=>selectProduct(e.target.value)}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code||"Be kodo"} ({fmt(p.quantity)}{isInkProduct(p)?"%":""})</option>)}</select></label>
-    <label>{mode==="set"?(isInkProduct(product)?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(isInkProduct(product)?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" step={isInkProduct(product)?1:product?.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
+    <label>Prekė<select required value={id} onChange={e=>selectProduct(e.target.value)}><option value="">Pasirinkite prekę</option>{products.map(p=><option value={p.id} key={p.id}>{displayName(p)} · {p.code||"Be kodo"} ({fmt(p.quantity)}{p.kind==="ink"?"%":""})</option>)}</select></label>
+    <label>{mode==="set"?(product?.kind==="ink"?"Naujas tikslus lygis (%)":"Naujas tikslus likutis"):(product?.kind==="ink"?"Pokytis (%)":"Kiekis")}<input type="number" required min="0" max={product?.kind==="ink"?100:undefined} step={product?.kind==="ink"?1:product?.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
     {isAdmin&&mode==="set"&&product&&<>
       <div className="form-two"><label>Minimalus likutis<input type="number" required min="0" step={product.kind==="chemical"||isRollProduct(product)?"0.1":"0.5"} value={minQty} onChange={e=>setMinQty(e.target.value)}/></label><label>Prekės kodas (nebūtina)<input value={code} onChange={e=>setCode(e.target.value)} placeholder="Be kodo"/></label></div>
-      <label>Aprašymas (nebūtina)<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Pvz., XXL spaudos popierius"/></label>
-      {product.kind==="chemical"&&<label>Bako dydis<select value={tankSize} onChange={e=>setTankSize(e.target.value)}><option value="large">Didelis</option><option value="small">Mažas</option></select></label>}
       {product.kind!=="paper"&&product.kind!=="chemical"&&<label>Prekės spalva<select value={color} onChange={e=>setColor(e.target.value)}><option value="">Be spalvos</option>{PRODUCT_PALETTE.map(c=><option value={c.value} key={c.value}>{c.name}</option>)}</select></label>}
     </>}
     <label>Priežastis<select value={reason} onChange={e=>setReason(e.target.value)}><option>Papildymas</option><option>Paėmimas</option><option>QR nuskaitymas praleistas</option><option>Likučio perskaičiavimas</option><option>Brokuota / sugadinta</option><option>Kita</option></select></label>
-    {product&&<div className="adjust-preview"><span>Dabartinis likutis</span><b>{fmt(product.quantity)}{isInkProduct(product)?"%":` ${product.unit}`}</b><span>Po pakeitimo</span><b>{fmt(after)}{isInkProduct(product)?"%":` ${product.unit}`}</b></div>}
+    {product&&<div className="adjust-preview"><span>Dabartinis likutis</span><b>{fmt(product.quantity)}{product.kind==="ink"?"%":` ${product.unit}`}</b><span>Po pakeitimo</span><b>{fmt(after)}{product.kind==="ink"?"%":` ${product.unit}`}</b></div>}
     <button className="primary-button" disabled={busy||!product}>{busy?"Saugoma…":mode==="set"?"Išsaugoti pakeitimus":"Išsaugoti likutį"}</button>
   </form>;
 }
@@ -806,12 +557,17 @@ function QrLabel({product}) {
   </div>;
 }
 function logCategory(log, products=[]) {
-  const category = log.products?.category || products.find(p => p.id === log.product_id)?.category;
-  return NAV.find(n => n.id === category)?.label || "Ištrinta / nepriskirta prekė";
+  const product = log.products || products.find(p => p.id === log.product_id);
+  if (isPoremis(product)) return "Poremiai";
+  return NAV.find(n => n.id === product?.category)?.label || "Ištrinta / nepriskirta prekė";
 }
 function HistoryModal({logs, products=[]}) {
   const [category, setCategory] = useState("all");
-  const filtered = logs.filter(log => category === "all" || (log.products?.category || products.find(p => p.id === log.product_id)?.category) === category);
+  const filtered = logs.filter(log => {
+    if (category === "all") return true;
+    const product = log.products || products.find(p => p.id === log.product_id);
+    return category === "poremai" ? isPoremis(product) : product?.category === category && !isPoremis(product);
+  });
   return <div className="report-content">
     <div className="report-filter-grid history-filter"><label>Kategorija<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">Visos kategorijos</option>{NAV.map(n=><option key={n.id} value={n.id}>{n.label}</option>)}</select></label><div className="report-result-count">Įrašų: <b>{filtered.length}</b></div></div>
     <div className="history-modal-list">{filtered.length?filtered.map(log=><div className="history-modal-row" key={log.id}><div><b>{log.products?displayName(log.products):log.product_name||"Prekė"}</b><small>{shortTime(log.created_at)} · {logCategory(log,products)} · {log.reason||"Likučio pakeitimas"}</small></div><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong></div>):<div className="empty-state">Pasirinktoje istorijoje įrašų nėra.</div>}</div>
