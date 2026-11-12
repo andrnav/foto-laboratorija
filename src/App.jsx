@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  Layers3, Printer, CupSoda, Frame, Box, QrCode, PlusCircle,
+  Layers3, Printer, Coffee, Images, GalleryHorizontal, PaperBag, LayoutFreeform, Box, QrCode, PlusCircle,
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
   ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
@@ -15,12 +15,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const NAV = [
-  { id: "photo", label: "Foto medžiagos", icon: Layers3, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
+  { id: "photo", label: "Foto medžiagos", icon: PaperBag, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
   { id: "wide", label: "Plačiaformatė spauda", icon: Printer, sections: [{id:"paper",label:"Popierius"},{id:"ink",label:"Rašalas"},{id:"other",label:"Kita"}] },
-  { id: "sublimation", label: "Sublimacija", icon: CupSoda, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
-  { id: "framing", label: "Rėminimas", icon: Frame, sections: [{id:"framing_materials",label:"Rėminimo medžiagos"},{id:"bases",label:"Pagrindai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
-  { id: "subframes", label: "Poremiai", icon: Frame, sections: [{id:"subframes",label:"Poremiai"}] },
-  { id: "wall_decor", label: "Wall decor", icon: Frame, sections: [{id:"wall_decor",label:"Wall decor"}] },
+  { id: "sublimation", label: "Sublimacija", icon: Coffee, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
+  { id: "framing", label: "Rėminimas", icon: Images, sections: [{id:"framing_materials",label:"Rėminimo medžiagos"},{id:"bases",label:"Pagrindai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
+  { id: "subframes", label: "Poremiai", icon: GalleryHorizontal, sections: [{id:"subframes",label:"Poremiai"}] },
+  { id: "wall_decor", label: "Wall decor", icon: LayoutFreeform, sections: [{id:"wall_decor",label:"Wall decor"}] },
   { id: "other", label: "Kitos medžiagos", icon: Box, sections: [{id:"other",label:"Kita"}] },
 ];
 const SUBCATEGORY_LABELS = Object.fromEntries(NAV.flatMap(n => n.sections.map(s => [`${n.id}:${s.id}`, s.label])));
@@ -90,6 +90,22 @@ function shortTime(s) { if (!s) return "—"; return new Date(s).toLocaleString(
 function stockTone(p) { return Number(p.quantity) < Number(p.min_quantity) ? "low" : "ok"; }
 function isRollProduct(p) { return /^(rul\.?|rulonas|rulonai)$/i.test(String(p?.unit || "").trim()); }
 function displayName(p) { return p.kind === "paper" ? `${p.surface} ${String(p.width_cm).replace(".",",")} cm` : p.name; }
+function subframeDimensions(p) {
+  const source = `${displayName(p) || ""} ${p.description || ""}`;
+  const match = source.match(/(\d+(?:[.,]\d+)?)\s*[x×х*]\s*(\d+(?:[.,]\d+)?)/i);
+  if (!match) return null;
+  const width = Number(match[1].replace(",", "."));
+  const height = Number(match[2].replace(",", "."));
+  return Number.isFinite(width) && Number.isFinite(height) ? { width, height, area: width * height } : null;
+}
+function compareSubframeDimensions(a, b) {
+  const da = subframeDimensions(a);
+  const db = subframeDimensions(b);
+  if (da && db) return da.area - db.area || da.width - db.width || da.height - db.height || displayName(a).localeCompare(displayName(b), "lt");
+  if (da) return -1;
+  if (db) return 1;
+  return displayName(a).localeCompare(displayName(b), "lt");
+}
 function chemicalSortKey(name="") {
   const n=name.toLowerCase();
   if (n.includes("cd") || n.includes("developer")) return 0;
@@ -675,7 +691,7 @@ export default function App() {
       </> : <section className="panel category-panel">
         <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>{activeLabel}</h2><p>Medžiagos suskirstytos pagal šios skilties kategorijas</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product"})}><Plus size={16}/> Pridėti prekę</button>}</div>
         {<div className="subcategory-grid">{NAV.find(n=>n.id===active)?.sections.map(section=>{
-          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort((a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
+          const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort(active==="subframes"?compareSubframeDimensions:(a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
               {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
