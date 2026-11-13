@@ -840,6 +840,12 @@ export default function App() {
 }
 
 
+/* Užsakomų medžiagų prekės: suapvalinti kortelių kampai. */
+.order-list .order-item {
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
 `}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
