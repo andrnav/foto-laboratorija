@@ -334,7 +334,8 @@ export default function App() {
     }
     setBusy(true);
     try {
-      // QR tik suranda prekę. Likutis nekeičiamas, kol naudotojas pats neišsaugo naujos reikšmės.
+      // Foto popieriaus QR yra greitas paėmimo veiksmas: kiekvienas sėkmingas nuskaitymas nurašo 1 vnt.
+      // Visoms kitoms prekėms paliekamas rankinis likučio koregavimo langas.
       const { data, error } = await supabase.from("products").select("*").eq("code", cleaned).maybeSingle();
       if (error) {
         flash(`Nepavyko rasti prekės pagal QR kodą: ${error.message}`);
@@ -342,6 +343,15 @@ export default function App() {
       }
       if (!data) {
         flash(`QR kodas „${cleaned}“ neatitinka jokios prekės.`);
+        return;
+      }
+      if (data.category === "photo" && data.kind === "paper") {
+        if (Number(data.quantity) < 1) {
+          await loadData();
+          flash(`„${displayName(data)}“ likutis jau yra 0. Nurašymas neatliktas.`);
+          return;
+        }
+        await adjustStock(data, -1, "QR nuskaitymas: foto popieriaus paėmimas");
         return;
       }
       await loadData();
@@ -736,7 +746,7 @@ export default function App() {
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
     {modal?.type==="adjust"&&<Modal title="Likučių koregavimas" onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} isAdmin={isAdmin} onSubmit={adjustStock} busy={busy}/></Modal>}
-    {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Nuskenavus atsidarys prekės likučio koregavimo langas. Likutis automatiškai nekeičiamas.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
+    {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Foto popieriaus nuskaitymas automatiškai nurašo 1 vnt.; kitoms prekėms atidaromas likučio koregavimo langas.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
     {modal?.type==="history"&&<Modal title="Visa sandėlio istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={logs} products={products}/></Modal>}
     {modal?.type==="reports"&&<Modal title="Sandėlio ataskaitos" onClose={()=>setModal(null)} wide><ReportsModal logs={logs} products={products}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
@@ -830,7 +840,7 @@ function AdjustForm({products,initialProduct,mode:initialMode,isAdmin,onSubmit,b
 }
 function QrLibrary({products,isAdmin,canManageStock,onScan,onPrint}) {
   const qrProducts=products.filter(p=>(p.kind==="paper"||p.kind==="chemical")&&String(p.code||"").trim());
-  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti foto popieriaus ir foto chemijos QR kodai. Nuskenavus kodą atsidarys atitinkamos prekės likučio koregavimo langas su dabartiniu kiekiu. Likutis pasikeis tik tada, kai patys įvesite naują reikšmę ir paspausite „Išsaugoti pakeitimus“.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
+  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti foto popieriaus ir foto chemijos QR kodai. Nuskenavus foto popieriaus kodą automatiškai nurašomas 1 vnt. Chemijos ir kitų prekių QR atidaro likučio koregavimo langą.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
     <div className="qr-library-list">{qrProducts.slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="qr-library-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.kind==="chemical"?"Foto chemija":subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><span className="stock-badge">{fmt(p.quantity)} {p.unit}</span>{canManageStock&&<button className="secondary-button" onClick={()=>onPrint(p)}><QrCode size={15}/> Spausdinti etiketę</button>}</div>)}{!qrProducts.length&&<div className="empty-state">QR kodai atsiras prekėms, kurios turi įvestą unikalų kodą.</div>}</div>
   </div>;
 }
