@@ -290,9 +290,38 @@ export default function App() {
     const { error } = await supabase.rpc("adjust_stock", {
       p_product_id: product.id, p_new_quantity: newQty, p_reason: reason
     });
+    if (error) {
+      setBusy(false);
+      flash(`Nepavyko pakeisti likučio: ${error.message}`);
+      return;
+    }
+    const effectiveMin = details ? Number(details.min_quantity) : Number(product.min_quantity);
+    if (newQty >= effectiveMin && product.is_ordered) {
+      const { error: orderResetError } = await supabase.from("products").update({ is_ordered: false }).eq("id", product.id);
+      if (orderResetError) {
+        setBusy(false);
+        await loadData();
+        setModal(null);
+        flash(`Likutis išsaugotas, tačiau užsakymo žymos panaikinti nepavyko: ${orderResetError.message}`);
+        return;
+      }
+    }
     setBusy(false);
-    if (error) flash(`Nepavyko pakeisti likučio: ${error.message}`);
-    else { await loadData(); setModal(null); flash(details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."); }
+    await loadData();
+    setModal(null);
+    flash(newQty >= effectiveMin ? "Likutis išsaugotas. Prekė pasiekė minimalų likutį, todėl pašalinta iš užsakomų medžiagų, o užsakymo žyma panaikinta." : (details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."));
+  }
+
+  async function setProductOrdered(product, isOrdered) {
+    if (!canManageStock) return flash("Žymėti užsakymą gali tik prisijungęs darbuotojas arba administratorius.");
+    if (!supabase) return flash("Duomenų bazė nesukonfigūruota.");
+    const { error } = await supabase.from("products").update({ is_ordered: Boolean(isOrdered) }).eq("id", product.id);
+    if (error) {
+      flash(`Užsakymo būsenos išsaugoti nepavyko: ${error.message}. Patikrinkite, ar paleistas Supabase SQL pakeitimas.`);
+      return;
+    }
+    await loadData();
+    flash(isOrdered ? `„${displayName(product)}“ pažymėta kaip užsakyta.` : `„${displayName(product)}“ žyma „Užsakyta“ panaikinta.`);
   }
 
   async function addProduct(values) {
@@ -642,6 +671,66 @@ export default function App() {
     transform-origin:left center!important;
   }
 }
+.order-item {
+  position: relative;
+  transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.order-item-ordered {
+  background: #fff5d7 !important;
+  border-color: #efd27b !important;
+  box-shadow: inset 3px 0 0 #e5b83e;
+}
+.order-item-not-ordered {
+  background: #fff0ef;
+}
+.order-item-main { min-width: 0; }
+.order-status-button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-width: 112px;
+  min-height: 38px;
+  border: 1px solid #d65a52;
+  border-radius: 9px;
+  padding: 8px 11px;
+  background: #fff;
+  color: #b8322b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+.order-status-button.ordered {
+  color: #76530b;
+  border-color: #d9b44c;
+  background: #fffaf0;
+}
+.order-status-button:disabled { opacity: .55; cursor: wait; }
+@keyframes orderHoldFill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.order-status-button .hold-progress {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: rgba(220, 75, 65, .18);
+  pointer-events: none;
+}
+.order-status-button.ordered .hold-progress {
+  background: rgba(220, 174, 54, .30);
+}
+.order-status-button .hold-label { position: relative; z-index: 1; }
+@media (max-width: 680px) {
+  .order-item { grid-template-columns: 7px minmax(0,1fr) auto !important; }
+  .order-item .stock-badge { grid-column: 2; }
+  .order-item .order-status-button { grid-column: 3; grid-row: 1 / span 2; min-width: 96px; padding: 8px 7px; }
+}
 
 `}
 </style>
@@ -673,7 +762,7 @@ export default function App() {
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
         <div className="panel-heading"><div className="panel-title"><span className={`heading-icon ${orderItems.length ? "red-icon" : "green-icon"}`}><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className={`pill-count ${orderItems.length ? "count-red" : "count-green"}`}>{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-indicator"></div><div className="order-item-main"><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}</div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -757,6 +846,54 @@ export default function App() {
 function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
 }
+function OrderStatusButton({ ordered, onComplete, disabled }) {
+  const timerRef = useRef(null);
+  const completedRef = useRef(false);
+  const [holding, setHolding] = useState(false);
+  const [progressKey, setProgressKey] = useState(0);
+
+  const cancelHold = useCallback(() => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    if (!completedRef.current) setHolding(false);
+  }, []);
+
+  const startHold = useCallback((event) => {
+    if (disabled || event.button === 2) return;
+    event.preventDefault();
+    cancelHold();
+    completedRef.current = false;
+    setHolding(true);
+    setProgressKey(key => key + 1);
+    timerRef.current = window.setTimeout(() => {
+      completedRef.current = true;
+      timerRef.current = null;
+      setHolding(false);
+      onComplete();
+    }, 2000);
+  }, [disabled, cancelHold, onComplete]);
+
+  useEffect(() => () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+  }, []);
+
+  return <button
+    type="button"
+    className={`order-status-button ${ordered ? "ordered" : ""}`}
+    disabled={disabled}
+    onPointerDown={startHold}
+    onPointerUp={cancelHold}
+    onPointerLeave={cancelHold}
+    onPointerCancel={cancelHold}
+    onContextMenu={event => event.preventDefault()}
+    onClick={event => event.preventDefault()}
+    aria-label={ordered ? "Palaikykite 2 sekundes, kad nuimtumėte užsakymo žymą" : "Palaikykite 2 sekundes, kad pažymėtumėte kaip užsakytą"}
+  >
+    <span key={progressKey} className="hold-progress" style={{ animation: holding ? "orderHoldFill 2s linear forwards" : "none" }} />
+    <span className="hold-label">{ordered ? "Užsakyta" : "Neužsakyta"}</span>
+  </button>;
+}
+
 function StockBadge({p, onQuantityClick}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{onQuantityClick ? <button type="button" className="stock-quantity-button" onClick={onQuantityClick} title="Spauskite, jei norite koreguoti likutį">{fmt(p.quantity)} {unit}</button> : <>{fmt(p.quantity)} {unit}</>}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper") {
