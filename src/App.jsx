@@ -742,6 +742,79 @@ export default function App() {
   .order-item .stock-badge span { font-size: 9px !important; }
 }
 
+/* Užsakomų medžiagų galutinis išdėstymas: prekė/kodas, būsena, likutis. */
+.order-item {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  grid-template-rows: auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 12px !important;
+}
+.order-item-main {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.order-item-main > b {
+  display: block !important;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.order-item-main .code-copy,
+.order-item-main .code-no-code { margin: 0 !important; }
+.order-status-button {
+  min-width: 0 !important;
+  width: 104px !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  padding: 7px 9px !important;
+  border-radius: 12px !important;
+  border-width: 2px !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.order-item .stock-badge { justify-self: end !important; margin: 0 !important; }
+@media (max-width: 680px) {
+  .order-item {
+    grid-template-columns: minmax(0, 1fr) 104px auto !important;
+    grid-template-rows: auto !important;
+    gap: 7px !important;
+    padding: 9px 8px !important;
+  }
+  .order-status-button {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 104px !important;
+    min-width: 104px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+  }
+  .order-item .stock-badge {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    white-space: nowrap !important;
+  }
+}
+@media (max-width: 390px) {
+  .order-item {
+    grid-template-columns: minmax(0, 1fr) 88px auto !important;
+    gap: 5px !important;
+    padding: 8px 6px !important;
+  }
+  .order-status-button {
+    width: 88px !important;
+    min-width: 88px !important;
+    font-size: 12px !important;
+  }
+}
+
+
 `}
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
@@ -772,7 +845,7 @@ export default function App() {
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
         <div className="panel-heading"><div className="panel-title"><span className={`heading-icon ${orderItems.length ? "red-icon" : "green-icon"}`}><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className={`pill-count ${orderItems.length ? "count-red" : "count-green"}`}>{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-item-main"><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}<StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/>}</div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-item-main"><b>{displayName(p)}</b><CopyCode code={p.code} flash={flash}/></div>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}<StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/>}</div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
