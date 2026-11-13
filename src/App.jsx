@@ -296,8 +296,11 @@ export default function App() {
       return;
     }
     const effectiveMin = details ? Number(details.min_quantity) : Number(product.min_quantity);
-    if (newQty >= effectiveMin && product.is_ordered) {
-      const { error: orderResetError } = await supabase.from("products").update({ is_ordered: false }).eq("id", product.id);
+    if (newQty > effectiveMin && product.is_ordered) {
+      const { error: orderResetError } = await supabase.rpc("set_product_ordered", {
+        p_product_id: product.id,
+        p_is_ordered: false
+      });
       if (orderResetError) {
         setBusy(false);
         await loadData();
@@ -309,13 +312,20 @@ export default function App() {
     setBusy(false);
     await loadData();
     setModal(null);
-    flash(newQty >= effectiveMin ? "Likutis išsaugotas. Prekė pasiekė minimalų likutį, todėl pašalinta iš užsakomų medžiagų, o užsakymo žyma panaikinta." : (details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."));
+    flash(newQty > effectiveMin && product.is_ordered
+      ? "Likutis išsaugotas. Jis viršijo minimalų likutį, todėl užsakymo žyma panaikinta."
+      : newQty >= effectiveMin
+        ? "Likutis išsaugotas. Prekė pašalinta iš užsakomų medžiagų sąrašo."
+        : (details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."));
   }
 
   async function setProductOrdered(product, isOrdered) {
     if (!canManageStock) return flash("Žymėti užsakymą gali tik prisijungęs darbuotojas arba administratorius.");
     if (!supabase) return flash("Duomenų bazė nesukonfigūruota.");
-    const { error } = await supabase.from("products").update({ is_ordered: Boolean(isOrdered) }).eq("id", product.id);
+    const { error } = await supabase.rpc("set_product_ordered", {
+      p_product_id: product.id,
+      p_is_ordered: Boolean(isOrdered)
+    });
     if (error) {
       flash(`Užsakymo būsenos išsaugoti nepavyko: ${error.message}. Patikrinkite, ar paleistas Supabase SQL pakeitimas.`);
       return;
