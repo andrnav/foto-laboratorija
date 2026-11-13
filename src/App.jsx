@@ -742,76 +742,91 @@ export default function App() {
   .order-item .stock-badge span { font-size: 9px !important; }
 }
 
-/* Užsakomų medžiagų galutinis išdėstymas: prekė/kodas, būsena, likutis. */
+/* Užsakomos medžiagos: kompaktiška eilutė, kodas šalia pavadinimo. */
 .order-item {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  grid-template-columns: minmax(0,1fr) auto auto !important;
   grid-template-rows: auto !important;
   align-items: center !important;
-  gap: 10px !important;
-  padding: 10px 12px !important;
+  gap: 8px !important;
+  padding: 8px 10px !important;
+  min-width: 0 !important;
 }
 .order-item-main {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 4px !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 4px 10px !important;
   min-width: 0 !important;
 }
 .order-item-main > b {
-  display: block !important;
-  max-width: 100%;
-  overflow-wrap: anywhere;
+  display: inline !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.2 !important;
 }
 .order-item-main .code-copy,
-.order-item-main .code-no-code { margin: 0 !important; }
-.order-status-button {
-  min-width: 0 !important;
-  width: 104px !important;
-  min-height: 52px !important;
-  height: 52px !important;
-  padding: 7px 9px !important;
-  border-radius: 12px !important;
-  border-width: 2px !important;
-  font-size: 14px !important;
-  font-weight: 750 !important;
+.order-item-main .code-no-code {
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
 }
+.order-status-button {
+  min-width: 0 !important;
+  width: auto !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 5px 9px !important;
+  border: 1px solid #d65a52 !important;
+  border-radius: 7px !important;
+  background: #fff !important;
+  color: #b8322b !important;
+  font: inherit !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.order-status-button.ordered {
+  color: #76530b !important;
+  border-color: #d9b44c !important;
+  background: #fffaf0 !important;
+}
+.order-status-button.confirming {
+  border-color: #8b6a22 !important;
+  background: #f5e5b8 !important;
+  color: #65480b !important;
+  box-shadow: 0 0 0 2px #e8cf8c !important;
+}
+.order-status-button:disabled { opacity: .55 !important; cursor: wait !important; }
 .order-item .stock-badge { justify-self: end !important; margin: 0 !important; }
 @media (max-width: 680px) {
   .order-item {
-    grid-template-columns: minmax(0, 1fr) 104px auto !important;
-    grid-template-rows: auto !important;
-    gap: 7px !important;
-    padding: 9px 8px !important;
+    grid-template-columns: minmax(0,1fr) auto auto !important;
+    gap: 6px !important;
+    padding: 7px 6px !important;
   }
-  .order-status-button {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    width: 104px !important;
-    min-width: 104px !important;
-    height: 52px !important;
-    min-height: 52px !important;
-  }
-  .order-item .stock-badge {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    white-space: nowrap !important;
-  }
+  .order-item-main { gap: 3px 7px !important; }
+  .order-item-main > b { font-size: 13px !important; }
+  .order-item-main .code-copy,
+  .order-item-main .code-no-code { font-size: 11px !important; }
+  .order-status-button { min-height: 32px !important; height: 32px !important; padding: 5px 7px !important; font-size: 10px !important; }
+  .order-item .stock-badge { padding: 5px 6px !important; white-space: nowrap !important; }
+  .order-item .stock-badge strong { font-size: 13px !important; }
+  .order-item .stock-badge span { font-size: 9px !important; }
 }
 @media (max-width: 390px) {
-  .order-item {
-    grid-template-columns: minmax(0, 1fr) 88px auto !important;
-    gap: 5px !important;
-    padding: 8px 6px !important;
-  }
-  .order-status-button {
-    width: 88px !important;
-    min-width: 88px !important;
-    font-size: 12px !important;
-  }
+  .order-item { gap: 4px !important; padding: 6px 5px !important; }
+  .order-status-button { padding: 5px 6px !important; font-size: 9px !important; }
 }
 
 
@@ -845,7 +860,7 @@ export default function App() {
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
         <div className="panel-heading"><div className="panel-title"><span className={`heading-icon ${orderItems.length ? "red-icon" : "green-icon"}`}><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className={`pill-count ${orderItems.length ? "count-red" : "count-green"}`}>{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-item-main"><b>{displayName(p)}</b><CopyCode code={p.code} flash={flash}/></div>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}<StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/>}</div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-item-main"><b>{displayName(p)}</b><CopyCode code={p.code} flash={flash}/></div>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}<StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -930,51 +945,39 @@ function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
 }
 function OrderStatusButton({ ordered, onComplete, disabled }) {
-  const timerRef = useRef(null);
-  const completedRef = useRef(false);
-  const [holding, setHolding] = useState(false);
-  const [progressKey, setProgressKey] = useState(0);
+  const [confirming, setConfirming] = useState(false);
+  const resetTimer = useRef(null);
 
-  const cancelHold = useCallback(() => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = null;
-    if (!completedRef.current) setHolding(false);
-  }, []);
+  useEffect(() => {
+    if (!confirming) return undefined;
+    resetTimer.current = window.setTimeout(() => setConfirming(false), 3000);
+    return () => {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+    };
+  }, [confirming]);
 
-  const startHold = useCallback((event) => {
-    if (disabled || event.button === 2) return;
-    event.preventDefault();
-    cancelHold();
-    completedRef.current = false;
-    setHolding(true);
-    setProgressKey(key => key + 1);
-    timerRef.current = window.setTimeout(() => {
-      completedRef.current = true;
-      timerRef.current = null;
-      setHolding(false);
+  function handleClick() {
+    if (disabled) return;
+    if (confirming) {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+      setConfirming(false);
       onComplete();
-    }, 1000);
-  }, [disabled, cancelHold, onComplete]);
+      return;
+    }
+    setConfirming(true);
+  }
 
-  useEffect(() => () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-  }, []);
-
+  const label = ordered ? "Užsakyta" : "Neužsakyta";
   return <button
     type="button"
-    className={`order-status-button ${ordered ? "ordered" : ""}`}
+    className={`order-status-button ${ordered ? "ordered" : ""} ${confirming ? "confirming" : ""}`}
     disabled={disabled}
-    onPointerDown={startHold}
-    onPointerUp={cancelHold}
-    onPointerLeave={cancelHold}
-    onPointerCancel={cancelHold}
-    onContextMenu={event => event.preventDefault()}
-    onClick={event => event.preventDefault()}
-    aria-label={ordered ? "Palaikykite 1 sekundę, kad nuimtumėte užsakymo žymą" : "Palaikykite 1 sekundę, kad pažymėtumėte kaip užsakytą"}
-  >
-    <span key={progressKey} className="hold-progress" style={{ animation: holding ? "orderHoldFill 1s linear forwards" : "none" }} />
-    <span className="hold-label">{ordered ? "Užsakyta" : "Neužsakyta"}</span>
-  </button>;
+    onClick={handleClick}
+    onBlur={() => setConfirming(false)}
+    aria-label={confirming ? `Patvirtinti: ${ordered ? "nuimti užsakymo žymą" : "pažymėti kaip užsakytą"}` : `${label}. Paspauskite, kad patvirtintumėte pakeitimą`}
+  >{confirming ? "Patvirtinti?" : label}</button>;
 }
 
 function StockBadge({p, onQuantityClick}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{onQuantityClick ? <button type="button" className="stock-quantity-button" onClick={onQuantityClick} title="Spauskite, jei norite koreguoti likutį">{fmt(p.quantity)} {unit}</button> : <>{fmt(p.quantity)} {unit}</>}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
