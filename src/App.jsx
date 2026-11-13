@@ -452,6 +452,12 @@ export default function App() {
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
     <style>{`
+/* Plačiaformatės spaudos rašalo likutis: spalvota juosta ir visada įskaitomas procentas. */
+.ink-level{display:flex!important;flex-direction:column!important;gap:4px!important;width:116px!important;max-width:100%!important;min-width:0!important}
+.ink-level-track{position:relative!important;display:block!important;width:100%!important;height:24px!important;overflow:hidden!important;border:1px solid #d7dfda!important;border-radius:7px!important;background:#edf1ee!important;box-shadow:inset 0 1px 2px #0000000d!important}
+.ink-level-fill{position:absolute!important;inset:0 auto 0 0!important;height:100%!important;border-radius:6px 0 0 6px!important;transition:width .2s ease!important}
+.ink-level-value{position:absolute!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:12px!important;line-height:1!important;font-weight:800!important;letter-spacing:.1px!important;color:#17231c!important;text-shadow:0 1px 0 #ffffff,0 -1px 0 #ffffff,1px 0 0 #ffffff,-1px 0 0 #ffffff!important}
+.ink-level-min{font-size:10px!important;line-height:1.1!important;color:#66776c!important;white-space:nowrap!important}
 /* Kompaktiškas likučio vaizdas: skaičius pirmas, be pasikartojančio „DABAR“. */
 .stock-unused{display:inline-block!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#718078!important;font-size:13px!important;font-weight:600!important;white-space:nowrap!important}
 .stock-badge{display:inline-flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;min-width:0!important;width:max-content!important;max-width:100%!important;padding:6px 9px!important;border:1px solid #dfe7e1!important;border-left:3px solid #78a98a!important;border-radius:7px!important;background:#f5f7f5!important;box-shadow:none!important;white-space:nowrap!important;color:#263b2d!important}
@@ -514,7 +520,7 @@ export default function App() {
 .order-item{grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;padding:8px 7px!important}
 .order-item>.order-item-main{width:auto!important;min-width:0!important}.order-item .stock-badge{padding:5px 7px!important}
 .order-item>.order-item-main>b{font-size:13px!important}
-.ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
+.ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.ink-level{width:88px!important;min-width:82px!important}.ink-level-track{height:22px!important}.ink-level-value{font-size:11px!important}.ink-level-min{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
 /* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
 @media(max-width:760px){
@@ -918,7 +924,7 @@ export default function App() {
           const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort(active==="subframes"?compareSubframeDimensions:(a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock">{active==="wide"&&section.id==="ink"&&isInkProduct(p)?<InkLevelBar p={p}/>:<StockBadge p={p}/>}</div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
@@ -990,6 +996,18 @@ function OrderStatusButton({ ordered, onComplete, disabled }) {
   >{confirming ? "Patvirtinti?" : label}</button>;
 }
 
+function InkLevelBar({p}) {
+  const amount=Number(p.quantity);
+  const percent=Number.isFinite(amount)?amount:0;
+  const fill=Math.min(100,Math.max(0,percent));
+  return <div className="ink-level" aria-label={`Rašalo likutis ${fmt(p.quantity)} procentų`}>
+    <div className="ink-level-track">
+      <span className="ink-level-fill" style={{width:`${fill}%`,backgroundColor:inkHex(p.name)}}/>
+      <span className="ink-level-value">{fmt(p.quantity)}%</span>
+    </div>
+    <span className="ink-level-min">Min. {fmt(p.min_quantity)}%</span>
+  </div>;
+}
 function StockBadge({p, onQuantityClick}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{onQuantityClick ? <button type="button" className="stock-quantity-button" onClick={onQuantityClick} title="Spauskite, jei norite koreguoti likutį">{fmt(p.quantity)} {unit}</button> : <>{fmt(p.quantity)} {unit}</>}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
 function productRowStyle(p) {
   if (p.kind === "paper") {
