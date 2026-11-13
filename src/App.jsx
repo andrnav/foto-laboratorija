@@ -290,9 +290,48 @@ export default function App() {
     const { error } = await supabase.rpc("adjust_stock", {
       p_product_id: product.id, p_new_quantity: newQty, p_reason: reason
     });
+    if (error) {
+      setBusy(false);
+      flash(`Nepavyko pakeisti likučio: ${error.message}`);
+      return;
+    }
+    const effectiveMin = details ? Number(details.min_quantity) : Number(product.min_quantity);
+    if (newQty > effectiveMin && product.is_ordered) {
+      const { error: orderResetError } = await supabase.rpc("set_product_ordered", {
+        p_product_id: product.id,
+        p_is_ordered: false
+      });
+      if (orderResetError) {
+        setBusy(false);
+        await loadData();
+        setModal(null);
+        flash(`Likutis išsaugotas, tačiau užsakymo žymos panaikinti nepavyko: ${orderResetError.message}`);
+        return;
+      }
+    }
     setBusy(false);
-    if (error) flash(`Nepavyko pakeisti likučio: ${error.message}`);
-    else { await loadData(); setModal(null); flash(details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."); }
+    await loadData();
+    setModal(null);
+    flash(newQty > effectiveMin && product.is_ordered
+      ? "Likutis išsaugotas. Jis viršijo minimalų likutį, todėl užsakymo žyma panaikinta."
+      : newQty >= effectiveMin
+        ? "Likutis išsaugotas. Prekė pašalinta iš užsakomų medžiagų sąrašo."
+        : (details ? "Prekės duomenys ir likutis išsaugoti." : "Likutis išsaugotas."));
+  }
+
+  async function setProductOrdered(product, isOrdered) {
+    if (!canManageStock) return flash("Žymėti užsakymą gali tik prisijungęs darbuotojas arba administratorius.");
+    if (!supabase) return flash("Duomenų bazė nesukonfigūruota.");
+    const { error } = await supabase.rpc("set_product_ordered", {
+      p_product_id: product.id,
+      p_is_ordered: Boolean(isOrdered)
+    });
+    if (error) {
+      flash(`Užsakymo būsenos išsaugoti nepavyko: ${error.message}. Patikrinkite, ar paleistas Supabase SQL pakeitimas.`);
+      return;
+    }
+    await loadData();
+    flash(isOrdered ? `„${displayName(product)}“ pažymėta kaip užsakyta.` : `„${displayName(product)}“ žyma „Užsakyta“ panaikinta.`);
   }
 
   async function addProduct(values) {
@@ -334,7 +373,8 @@ export default function App() {
     }
     setBusy(true);
     try {
-      // QR tik suranda prekę. Likutis nekeičiamas, kol naudotojas pats neišsaugo naujos reikšmės.
+      // Foto popieriaus QR yra greitas paėmimo veiksmas: kiekvienas sėkmingas nuskaitymas nurašo 1 vnt.
+      // Visoms kitoms prekėms paliekamas rankinis likučio koregavimo langas.
       const { data, error } = await supabase.from("products").select("*").eq("code", cleaned).maybeSingle();
       if (error) {
         flash(`Nepavyko rasti prekės pagal QR kodą: ${error.message}`);
@@ -342,6 +382,15 @@ export default function App() {
       }
       if (!data) {
         flash(`QR kodas „${cleaned}“ neatitinka jokios prekės.`);
+        return;
+      }
+      if (data.category === "photo" && data.kind === "paper") {
+        if (Number(data.quantity) < 1) {
+          await loadData();
+          flash(`„${displayName(data)}“ likutis jau yra 0. Nurašymas neatliktas.`);
+          return;
+        }
+        await adjustStock(data, -1, "QR nuskaitymas: foto popieriaus paėmimas");
         return;
       }
       await loadData();
@@ -423,9 +472,9 @@ export default function App() {
 .stock-quantity-button:hover{text-decoration:underline;text-underline-offset:3px}
 .stock-quantity-button:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:3px}
 /* Užsakomų medžiagų eilutė: pavadinimas ir likutis arčiau, be tuščios juostos. */
-.order-item{display:grid!important;grid-template-columns:7px minmax(0,max-content) max-content!important;justify-content:start!important;align-items:center!important;gap:14px!important;padding:10px 12px!important;min-width:0!important}
-.order-item>div:nth-child(2){min-width:0!important;width:min(620px,52vw)!important}
-.order-item>div:nth-child(2)>b{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;overflow:hidden!important;line-height:1.2!important;overflow-wrap:anywhere!important}
+.order-item{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;justify-content:stretch!important;align-items:center!important;gap:10px!important;padding:10px 12px!important;min-width:0!important}
+.order-item>.order-item-main{min-width:0!important;width:auto!important}
+.order-item>.order-item-main>b{display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.2!important;overflow-wrap:anywhere!important}
 .order-item .stock-badge{justify-self:end!important}
 .order-item .code-copy,.order-item .code-no-code{margin-top:3px!important}
  .order-list{gap:5px!important}
@@ -462,9 +511,9 @@ export default function App() {
 .chem-row>.code-copy,.chem-row>.code-no-code{grid-column:2;grid-row:2;justify-self:start;font-size:12px!important}
 .chem-row>.tank-bar{grid-column:2 / 4;grid-row:3;justify-self:start;margin:2px 0 0 0;transform:scale(.88);transform-origin:left center}
 .chem-row>.row-action{grid-column:3;grid-row:2;justify-self:end}
-.order-item{grid-template-columns:6px minmax(0,1fr) max-content!important;gap:9px!important;padding:8px 7px!important}
-.order-item>div:nth-child(2){width:min(48vw,320px)!important}.order-item .stock-badge{padding:5px 7px!important}
-.order-item>div:nth-child(2)>b{font-size:13px!important}
+.order-item{grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;padding:8px 7px!important}
+.order-item>.order-item-main{width:auto!important;min-width:0!important}.order-item .stock-badge{padding:5px 7px!important}
+.order-item>.order-item-main>b{font-size:13px!important}
 .ink-product-name{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;white-space:nowrap!important;text-align:left!important}.ink-product-name>b{flex:0 1 auto!important;font-size:clamp(10px,3.2vw,13px)!important;white-space:nowrap!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important}.ink-product-name .ink-color-swatch{width:27px!important;min-width:27px!important;height:23px!important;flex:0 0 27px!important}.generic-table{width:100%;overflow:hidden}.generic-row{grid-template-columns:minmax(0,1fr) auto 64px!important;gap:5px 7px!important;padding:7px 6px!important;min-height:0!important}.generic-row>:first-child{grid-column:1;grid-row:1;align-self:end}.generic-row>.code-copy,.generic-row>.code-no-code{grid-column:1;grid-row:2;justify-self:start;max-width:100%;font-size:11px!important}.generic-row>.wide-paper-stock,.generic-row>.stock-badge{grid-column:2;grid-row:1 / span 2;justify-self:end;align-self:center}.generic-row>.row-actions{grid-column:3;grid-row:1 / span 2;align-self:center;gap:3px!important}.generic-row .row-action{width:29px!important;height:29px!important;min-width:29px!important;padding:5px!important}.stock-badge{padding:5px 7px!important;border-radius:6px!important}.stock-badge strong{font-size:14px!important}.stock-badge span{font-size:9px!important}.subcategory-grid{grid-template-columns:minmax(0,1fr)!important}.subcategory-block{min-width:0!important}.table-head{display:none!important}
 }
 /* V16: mobilioje versijoje foto popieriaus veiksmai turi savo eilute, neuzlipa ant pavirsiaus ar kiekio. */
@@ -632,6 +681,170 @@ export default function App() {
     transform-origin:left center!important;
   }
 }
+.order-item {
+  position: relative;
+  transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.order-item-ordered {
+  background: #fff5d7 !important;
+  border-color: #efd27b !important;
+  box-shadow: inset 3px 0 0 #e5b83e;
+}
+.order-item-not-ordered {
+  background: #fff0ef;
+}
+.order-item-main { min-width: 0; }
+.order-status-button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-width: 112px;
+  min-height: 38px;
+  border: 1px solid #d65a52;
+  border-radius: 9px;
+  padding: 8px 11px;
+  background: #fff;
+  color: #b8322b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+.order-status-button.ordered {
+  color: #76530b;
+  border-color: #d9b44c;
+  background: #fffaf0;
+}
+.order-status-button:disabled { opacity: .55; cursor: wait; }
+@keyframes orderHoldFill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.order-status-button .hold-progress {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: rgba(220, 75, 65, .18);
+  pointer-events: none;
+}
+.order-status-button.ordered .hold-progress {
+  background: rgba(220, 174, 54, .30);
+}
+.order-status-button .hold-label { position: relative; z-index: 1; }
+@media (max-width: 680px) {
+  .order-item {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto auto !important;
+    grid-template-rows: auto !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 7px !important;
+  }
+  .order-item > .order-item-main { grid-column: 1; grid-row: 1; min-width: 0 !important; width: auto !important; }
+  .order-item .order-status-button { grid-column: 2; grid-row: 1; min-width: 76px !important; min-height: 34px !important; padding: 6px 7px !important; font-size: 11px !important; }
+  .order-item .stock-badge { grid-column: 3; grid-row: 1; justify-self: end !important; margin: 0 !important; padding: 5px 6px !important; white-space: nowrap !important; }
+  .order-item .stock-badge strong { font-size: 13px !important; }
+  .order-item .stock-badge span { font-size: 9px !important; }
+}
+
+/* Užsakomos medžiagos: kompaktiška eilutė, kodas šalia pavadinimo. */
+.order-item {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) auto auto !important;
+  grid-template-rows: auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 10px !important;
+  min-width: 0 !important;
+}
+.order-item-main {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 4px 10px !important;
+  min-width: 0 !important;
+}
+.order-item-main > b {
+  display: inline !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.2 !important;
+}
+.order-item-main .code-copy,
+.order-item-main .code-no-code {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+.order-status-button {
+  min-width: 0 !important;
+  width: auto !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 5px 9px !important;
+  border: 1px solid #d65a52 !important;
+  border-radius: 7px !important;
+  background: #fff !important;
+  color: #b8322b !important;
+  font: inherit !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.order-status-button.ordered {
+  color: #76530b !important;
+  border-color: #d9b44c !important;
+  background: #fffaf0 !important;
+}
+.order-status-button.confirming {
+  border-color: #8b6a22 !important;
+  background: #f5e5b8 !important;
+  color: #65480b !important;
+  box-shadow: 0 0 0 2px #e8cf8c !important;
+}
+.order-status-button:disabled { opacity: .55 !important; cursor: wait !important; }
+.order-item .stock-badge { justify-self: end !important; margin: 0 !important; }
+@media (max-width: 680px) {
+  .order-item {
+    grid-template-columns: minmax(0,1fr) auto auto !important;
+    gap: 6px !important;
+    padding: 7px 6px !important;
+  }
+  .order-item-main { gap: 3px 7px !important; }
+  .order-item-main > b { font-size: 13px !important; }
+  .order-item-main .code-copy,
+  .order-item-main .code-no-code { font-size: 11px !important; }
+  .order-status-button { min-height: 32px !important; height: 32px !important; padding: 5px 7px !important; font-size: 10px !important; }
+  .order-item .stock-badge { padding: 5px 6px !important; white-space: nowrap !important; }
+  .order-item .stock-badge strong { font-size: 13px !important; }
+  .order-item .stock-badge span { font-size: 9px !important; }
+}
+@media (max-width: 390px) {
+  .order-item { gap: 4px !important; padding: 6px 5px !important; }
+  .order-status-button { padding: 5px 6px !important; font-size: 9px !important; }
+}
+
+
+/* Užsakomų medžiagų prekės: suapvalinti kortelių kampai. */
+.order-list .order-item {
+  border-radius: 10px !important;
+  overflow: hidden;
+}
 
 `}
 </style>
@@ -663,7 +876,7 @@ export default function App() {
 
       <section className={`panel order-panel order-panel-top ${orderItems.length ? "has-orders" : "no-orders"}`}>
         <div className="panel-heading"><div className="panel-title"><span className={`heading-icon ${orderItems.length ? "red-icon" : "green-icon"}`}><ShoppingCart size={23}/></span><div><h2>Užsakomos medžiagos</h2><p>{activeLabel} · rodomos tik šios skilties pozicijos, kurių likutis mažesnis už minimumą</p></div></div><span className={`pill-count ${orderItems.length ? "count-red" : "count-green"}`}>{orderItems.length}</span></div>
-        <div className="order-list">{orderItems.map(p=><div className="order-item" key={p.id}><div className="order-indicator"></div><div><b>{displayName(p)}</b><small>{subcategoryLabel(p.category,p.subcategory)}</small><CopyCode code={p.code} flash={flash}/></div><StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
+        <div className="order-list">{orderItems.map(p=><div className={`order-item ${p.is_ordered ? "order-item-ordered" : "order-item-not-ordered"}`} key={p.id}><div className="order-item-main"><b>{displayName(p)}</b><CopyCode code={p.code} flash={flash}/></div>{canManageStock&&<OrderStatusButton ordered={Boolean(p.is_ordered)} onComplete={()=>setProductOrdered(p,!p.is_ordered)} disabled={busy}/>}<StockBadge p={p} onQuantityClick={canManageStock ? ()=>setModal({type:"adjust",product:p,mode:"set"}) : undefined}/></div>)}{!orderItems.length&&<div className="all-stock-ok"><Check size={18}/> Šioje skiltyje užsakomų medžiagų nėra.</div>}</div>
       </section>
 
       {notice && <div className="toast" role="status">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}
@@ -711,7 +924,7 @@ export default function App() {
           const rows=categoryProducts.filter(p=>(p.subcategory||"other")===section.id).slice().sort(active==="subframes"?compareSubframeDimensions:(a,b)=>section.id==="ink"?inkSortKey(a)-inkSortKey(b):displayName(a).localeCompare(displayName(b),"lt"));
           return <div className="subcategory-block" key={section.id}><div className="subcategory-heading"><h3>{section.label}</h3><span>{rows.length} poz.</span>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:section.id})}><Plus size={14}/> Pridėti</button>}</div>
             <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+              {rows.map(p=><div className={`generic-row ${active==="wide"&&section.id==="paper"?"wide-paper-row":""}`} key={p.id} style={active==="wide"&&section.id==="ink"?inkProductRowStyle(p):productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="wide-paper-stock"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
               {!rows.length&&<div className="empty-state">Šioje kategorijoje prekių nėra.{isAdmin?" Galite pridėti prekę.":""}</div>}
             </div>
           </div>;
@@ -736,7 +949,7 @@ export default function App() {
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
     {modal?.type==="adjust"&&<Modal title="Likučių koregavimas" onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} isAdmin={isAdmin} onSubmit={adjustStock} busy={busy}/></Modal>}
-    {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Nuskenavus atsidarys prekės likučio koregavimo langas. Likutis automatiškai nekeičiamas.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
+    {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Foto popieriaus nuskaitymas automatiškai nurašo 1 vnt.; kitoms prekėms atidaromas likučio koregavimo langas.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
     {modal?.type==="history"&&<Modal title="Visa sandėlio istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={logs} products={products}/></Modal>}
     {modal?.type==="reports"&&<Modal title="Sandėlio ataskaitos" onClose={()=>setModal(null)} wide><ReportsModal logs={logs} products={products}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
@@ -747,7 +960,55 @@ export default function App() {
 function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
 }
+function OrderStatusButton({ ordered, onComplete, disabled }) {
+  const [confirming, setConfirming] = useState(false);
+  const resetTimer = useRef(null);
+
+  useEffect(() => {
+    if (!confirming) return undefined;
+    resetTimer.current = window.setTimeout(() => setConfirming(false), 3000);
+    return () => {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+    };
+  }, [confirming]);
+
+  function handleClick() {
+    if (disabled) return;
+    if (confirming) {
+      if (resetTimer.current) window.clearTimeout(resetTimer.current);
+      resetTimer.current = null;
+      setConfirming(false);
+      onComplete();
+      return;
+    }
+    setConfirming(true);
+  }
+
+  const label = ordered ? "Užsakyta" : "Neužsakyta";
+  return <button
+    type="button"
+    className={`order-status-button ${ordered ? "ordered" : ""} ${confirming ? "confirming" : ""}`}
+    disabled={disabled}
+    onClick={handleClick}
+    onBlur={() => setConfirming(false)}
+    aria-label={confirming ? `Patvirtinti: ${ordered ? "nuimti užsakymo žymą" : "pažymėti kaip užsakytą"}` : `${label}. Paspauskite, kad patvirtintumėte pakeitimą`}
+  >{confirming ? "Patvirtinti?" : label}</button>;
+}
+
 function StockBadge({p, onQuantityClick}) { if (Number(p.quantity) === 0 && Number(p.min_quantity) === 0) return <span className="stock-unused">Nenaudojama</span>; const percent=isInkProduct(p); const unit=percent?"%":(p.unit||"vnt."); return <span className={`stock-badge ${stockTone(p)}`}><strong>{onQuantityClick ? <button type="button" className="stock-quantity-button" onClick={onQuantityClick} title="Spauskite, jei norite koreguoti likutį">{fmt(p.quantity)} {unit}</button> : <>{fmt(p.quantity)} {unit}</>}</strong><span>Min. {fmt(p.min_quantity)} {unit}</span></span>; }
+function inkProductRowStyle(p) {
+  const raw = Number(p.quantity);
+  const percent = Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0;
+  const color = inkHex(p.name);
+  const filled = `color-mix(in srgb, ${color} 28%, white)`;
+  return {
+    backgroundColor: "#f7f8f7",
+    backgroundImage: `linear-gradient(90deg, ${filled} 0%, ${filled} ${percent}%, #f7f8f7 ${percent}%, #f7f8f7 100%)`,
+    borderColor: `color-mix(in srgb, ${color} 38%, #dfe7e1)`,
+    transition: "background-image .25s ease, border-color .25s ease"
+  };
+}
 function productRowStyle(p) {
   if (p.kind === "paper") {
     const tones = { Glossy: "#eff9ef", Lustre: "#eff7ff", Silk: "#fff2f6" };
@@ -830,7 +1091,7 @@ function AdjustForm({products,initialProduct,mode:initialMode,isAdmin,onSubmit,b
 }
 function QrLibrary({products,isAdmin,canManageStock,onScan,onPrint}) {
   const qrProducts=products.filter(p=>(p.kind==="paper"||p.kind==="chemical")&&String(p.code||"").trim());
-  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti foto popieriaus ir foto chemijos QR kodai. Nuskenavus kodą atsidarys atitinkamos prekės likučio koregavimo langas su dabartiniu kiekiu. Likutis pasikeis tik tada, kai patys įvesite naują reikšmę ir paspausite „Išsaugoti pakeitimus“.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
+  return <div className="qr-library"><div className="qr-library-intro"><p>Čia pateikti foto popieriaus ir foto chemijos QR kodai. Nuskenavus foto popieriaus kodą automatiškai nurašomas 1 vnt. Chemijos ir kitų prekių QR atidaro likučio koregavimo langą.</p><button className="primary-button" onClick={onScan}><ScanLine size={16} style={{verticalAlign:"middle",marginRight:6}}/> Skenuoti QR kodą</button></div>
     <div className="qr-library-list">{qrProducts.slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="qr-library-row" key={p.id}><div><b>{displayName(p)}</b><small>{p.kind==="chemical"?"Foto chemija":subcategoryLabel(p.category,p.subcategory)} · {p.code}</small></div><span className="stock-badge">{fmt(p.quantity)} {p.unit}</span>{canManageStock&&<button className="secondary-button" onClick={()=>onPrint(p)}><QrCode size={15}/> Spausdinti etiketę</button>}</div>)}{!qrProducts.length&&<div className="empty-state">QR kodai atsiras prekėms, kurios turi įvestą unikalų kodą.</div>}</div>
   </div>;
 }
