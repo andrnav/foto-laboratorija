@@ -463,3 +463,24 @@
 
 
 @media(max-width:760px){.history-modal-row{grid-template-columns:minmax(100px,1fr) 42px 82px;gap:8px}.history-modal-reason{grid-column:1/-1}.history-modal-row>b{font-size:11px}}
+
+
+/* Istorijos eilutės: data pirmiausia, be horizontalaus slinkimo. */
+.history-column .table-head,.history-row{grid-template-columns:minmax(82px,.78fr) minmax(90px,1fr) 42px minmax(0,1.35fr);gap:9px;min-width:0;}
+.history-row{min-width:0;}
+.history-position,.history-reason,.history-modal-reason{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+.history-row .history-date{min-width:0;}
+.history-table{min-width:0;overflow:hidden;}
+.history-modal-row{grid-template-columns:minmax(82px,.78fr) minmax(100px,1fr) 48px minmax(0,1.4fr);min-width:0;}
+.history-modal-list{min-width:0;overflow-x:hidden;}
+@media(max-width:1200px){.history-column .table-head,.history-row{grid-template-columns:minmax(82px,.8fr) minmax(95px,1fr) 42px minmax(0,1.25fr);min-width:0;}}
+@media(max-width:760px){
+  .history-table{padding:0 8px 8px;overflow:hidden;}
+  .history-column .table-head,.history-row{grid-template-columns: minmax(72px,.78fr) minmax(0,1fr) 34px minmax(0,1.05fr);gap:6px;min-width:0;}
+  .history-column .table-head{font-size:9px;padding:8px 5px;}
+  .history-row{padding:10px 5px;font-size:10px;}
+  .history-row b,.history-row .history-date b{font-size:10px;}
+  .history-date small{font-size:9px;}
+  .history-modal-row{grid-template-columns:minmax(72px,.78fr) minmax(0,1fr) 34px minmax(0,1.05fr);gap:6px;}
+  .history-modal-reason{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
