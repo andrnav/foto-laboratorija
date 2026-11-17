@@ -484,3 +484,29 @@
   .history-modal-row{grid-template-columns:minmax(72px,.78fr) minmax(0,1fr) 34px minmax(0,1.05fr);gap:6px;}
   .history-modal-reason{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 }
+
+/* 7 dienu medziagu sunaudojimo tendencija */
+.usage-trend{min-width:104px;max-width:150px;padding:4px 7px 3px;border-radius:7px;background:linear-gradient(180deg,rgba(22,163,74,.075),rgba(22,163,74,.015));color:#16834a;line-height:1.15;overflow:hidden}
+.usage-trend-top,.usage-trend-compare{display:flex;align-items:center;justify-content:space-between;gap:5px;white-space:nowrap}
+.usage-trend-top span,.usage-trend-compare span{font-size:9px;color:#65776c}
+.usage-trend-top b{font-size:11px;color:#245d3d}
+.usage-trend-curve{display:block;width:100%;height:25px;margin-top:2px;overflow:visible}
+.usage-trend-days{display:flex;justify-content:space-between;color:#819087;font-size:8px;margin-top:-1px}
+.usage-trend-compare{margin-top:3px;padding-top:3px;border-top:1px solid rgba(22,163,74,.12)}
+.usage-trend-compare b{font-size:9px;color:#16834a;white-space:nowrap}
+.generic-stock-cell,.paper-stock-cell{display:flex;align-items:center;gap:7px;min-width:0}
+.wide-paper-stock{display:flex;align-items:center;gap:7px;min-width:0}
+.paper-stock-cell .usage-trend{max-width:138px}
+.chem-row .usage-trend{max-width:132px}
+@media(max-width:900px){
+  .usage-trend{min-width:88px;max-width:112px;padding:3px 5px}
+  .usage-trend-top span,.usage-trend-compare span{font-size:8px}
+  .usage-trend-top b{font-size:10px}
+  .usage-trend-compare b{font-size:8px}
+  .usage-trend-curve{height:21px}
+}
+@media(max-width:620px){
+  .usage-trend{min-width:82px;max-width:96px}
+  .usage-trend-compare span{display:none}
+  .generic-stock-cell,.paper-stock-cell,.wide-paper-stock{gap:4px}
+}
