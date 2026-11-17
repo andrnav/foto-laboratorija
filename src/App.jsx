@@ -87,6 +87,14 @@ function clockParts(d = new Date()) {
   return { date, weekday, time };
 }
 function shortTime(s) { if (!s) return "—"; return new Date(s).toLocaleString("lt-LT", { hour:"2-digit", minute:"2-digit", second:"2-digit", day:"2-digit", month:"2-digit", year:"numeric" }); }
+function historyDateTime(s) {
+  if (!s) return { date: "—", time: "" };
+  const date = new Date(s);
+  return {
+    date: date.toLocaleDateString("lt-LT", { year: "numeric", month: "2-digit", day: "2-digit" }),
+    time: date.toLocaleTimeString("lt-LT", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  };
+}
 function stockTone(p) { return Number(p.quantity) < Number(p.min_quantity) ? "low" : "ok"; }
 function isRollProduct(p) { return /^(rul\.?|rulonas|rulonai)$/i.test(String(p?.unit || "").trim()); }
 function displayName(p) { return p.kind === "paper" ? `${p.surface} ${String(p.width_cm).replace(".",",")} cm` : p.name; }
@@ -941,8 +949,11 @@ export default function App() {
       <div className="bottom-grid">
         <section className="panel history-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><History size={23}/></span><div><h2>Naujausi pakeitimai</h2><p>Sandėlio veiksmų istorija</p></div></div><button className="text-button" onClick={()=>setModal({type:"history"})}>Visa istorija <ChevronRight size={16}/></button></div>
-          <div className="history-table"><div className="table-head"><span>Laikas</span><span>Pozicija</span><span>Pokytis</span><span>Priežastis</span></div>
-            {activeLogs.slice(0,5).map(log=><div className="history-row" key={log.id}><span>{shortTime(log.created_at)}</span><b>{historyDisplayName(log, products)}</b><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong><span>{log.reason||"Likučio pakeitimas"}</span></div>)}
+          <div className="history-table">
+            {[activeLogs.slice(0,3), activeLogs.slice(3,5)].map((column,index)=><div className="history-column" key={index}>
+              <div className="table-head"><span>Laikas</span><span>Pozicija</span><span>Pokytis</span><span>Priežastis</span></div>
+              {column.map(log=>{const stamp=historyDateTime(log.created_at);return <div className="history-row" key={log.id}><span className="history-date"><b>{stamp.date}</b><small>{stamp.time}</small></span><b className="history-position" title={historyDisplayName(log, products)}>{historyDisplayName(log, products)}</b><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong><span className="history-reason" title={log.reason||"Likučio pakeitimas"}>{log.reason||"Likučio pakeitimas"}</span></div>;})}
+            </div>)}
             {!activeLogs.length&&<div className="empty-state">Šioje skiltyje pakeitimų dar nėra.</div>}
           </div>
         </section>
@@ -1123,7 +1134,7 @@ function HistoryModal({logs, products=[]}) {
   const filtered = logs.filter(log => category === "all" || (log.products?.category || products.find(p => p.id === log.product_id)?.category) === category);
   return <div className="report-content">
     <div className="report-filter-grid history-filter"><label>Kategorija<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">Visos kategorijos</option>{NAV.map(n=><option key={n.id} value={n.id}>{n.label}</option>)}</select></label><div className="report-result-count">Įrašų: <b>{filtered.length}</b></div></div>
-    <div className="history-modal-list">{filtered.length?filtered.map(log=><div className="history-modal-row" key={log.id}><div><b>{historyDisplayName(log, products)}</b><small>{shortTime(log.created_at)} · {logCategory(log,products)} · {log.reason||"Likučio pakeitimas"}</small></div><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong></div>):<div className="empty-state">Pasirinktoje istorijoje įrašų nėra.</div>}</div>
+    <div className="history-modal-list">{filtered.length?filtered.map(log=>{const stamp=historyDateTime(log.created_at);return <div className="history-modal-row" key={log.id}><span className="history-date"><b>{stamp.date}</b><small>{stamp.time}</small></span><b className="history-position" title={historyDisplayName(log, products)}>{historyDisplayName(log, products)}</b><strong className={Number(log.delta)<0?"negative-text":"positive-text"}>{Number(log.delta)>0?"+":""}{fmt(log.delta)}</strong><span className="history-modal-reason" title={`${log.reason||"Likučio pakeitimas"} · ${logCategory(log,products)}`}>{log.reason||"Likučio pakeitimas"} · {logCategory(log,products)}</span></div>;}):<div className="empty-state">Pasirinktoje istorijoje įrašų nėra.</div>}</div>
   </div>;
 }
 
