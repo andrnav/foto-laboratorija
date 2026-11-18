@@ -4,7 +4,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
   Layers3, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode, PlusCircle, FileText,
-  Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
+  Pencil, ChartNoAxesColumnIncreasing, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
   ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
   Download, Trash2, LockKeyhole, CalendarDays
@@ -375,7 +375,19 @@ export default function App() {
   }
 
   async function scanCode(code, alreadyLocked = false) {
-    const cleaned = String(code || "").trim();
+    let cleaned = String(code || "").trim();
+    // QR etiketėse saugoma nuoroda su ?scan=PREKES_KODAS, o ne vien pats prekės kodas.
+    // Kameros skaitytuvas grąžina visą nuorodą, todėl ištraukiame tą patį kodą,
+    // kurį iPhone naršyklė gauna atidarydama QR nuorodą.
+    if (/^https?:\/\//i.test(cleaned)) {
+      try {
+        const scannedUrl = new URL(cleaned);
+        const urlCode = scannedUrl.searchParams.get("scan");
+        if (urlCode) cleaned = urlCode.trim();
+      } catch {
+        // Jei tai netaisyklinga nuoroda, paliekame nuskaitytą tekstą kaip yra.
+      }
+    }
     if (!cleaned || (scanInProgress.current && !alreadyLocked)) return;
     scanInProgress.current = true;
     if (!user || !canManageStock) {
@@ -872,12 +884,12 @@ export default function App() {
       <div className="nav-divider"></div>
       {canManageStock&&<>
       <div className="nav-caption">Sandėlio veiksmai</div>
+      <button className="nav-item" onClick={startScanner}><ScanLine size={21}/><span>Skenuoti QR kodą</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
       <div className="nav-divider"></div>
       </>}
       <button className="nav-item" onClick={()=>setModal({type:"history"})}><History size={21}/><span>Istorija</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"reports"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos</span></button>
-      <button className="nav-item" onClick={()=>flash("Nustatymų skiltis bus išplėsta vėlesniame etape.")}><Settings size={21}/><span>Nustatymai</span></button>
       <div className="sidebar-bottom">
         {user && canManageStock && <><div className="admin-badge"><UserRound size={18}/><div><b>{isAdmin ? "Administratorius" : "Darbuotojas"}</b><small>{user.email}</small></div></div><button className="nav-item" onClick={signOut}><LogOut size={20}/><span>Atsijungti</span></button></>}
       </div>
