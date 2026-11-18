@@ -866,7 +866,8 @@ export default function App() {
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       {!user && <button className="login-button sidebar-login-top" onClick={()=>setModal({type:"login"})}><LockKeyhole size={18}/><span>Prisijungti</span></button>}
-      <nav className="main-nav">
+      <nav className="main-nav" style={{"--active-index": Math.max(0, NAV.findIndex(item => item.id === active))}}>
+        <span className="nav-active-indicator" aria-hidden="true" />
         {NAV.map(item => { const Icon=item.icon; return <button key={item.id} className={`nav-item ${active===item.id?"selected":""}`} onClick={()=>{setActive(item.id);setMobileMenu(false);}}><Icon size={21}/><span>{item.label}</span>{categoryCounts[item.id] > 0 && <small className="nav-order-count">{categoryCounts[item.id]}</small>}</button>; })}
       </nav>
       <div className="nav-divider"></div>
@@ -962,7 +963,11 @@ export default function App() {
       <footer className="footer"><span>FOTO LABORATORIJA · Sandėlio sistema</span><span>{user&&isAdmin?"Administratoriaus režimas":user&&isEmployee?"Darbuotojo režimas":"Viešas peržiūros režimas"} · Laikas: Lietuva</span></footer>
     </main>
 
-    <nav className="mobile-bottom-nav">{NAV.filter(item=>["photo","wide","sublimation","framing","subframes"].includes(item.id)).map(item=>{const Icon=item.icon;const label=item.id==="photo"?"Foto":item.id==="wide"?"Spauda":item.id==="sublimation"?"Subli":item.id==="framing"?"Rėminimas":"Poremiai";return <button key={item.id} className={active===item.id?"active":""} onClick={()=>setActive(item.id)}><Icon size={19}/><span>{label}</span></button>})}<button className={mobileMenu?"active":""} onClick={()=>setMobileMenu(true)}><Menu size={19}/><span>Meniu</span></button></nav>
+    <nav className="mobile-bottom-nav" style={{"--active-index": Math.max(0, NAV.filter(item=>["photo","wide","sublimation","framing","subframes"].includes(item.id)).findIndex(item => item.id === active))}}>
+      <span className="mobile-active-indicator" aria-hidden="true" />
+      {NAV.filter(item=>["photo","wide","sublimation","framing","subframes"].includes(item.id)).map(item=>{const Icon=item.icon;const label=item.id==="photo"?"Foto":item.id==="wide"?"Spauda":item.id==="sublimation"?"Subli":item.id==="framing"?"Rėminimas":"Poremiai";return <button key={item.id} className={active===item.id?"active":""} onClick={()=>setActive(item.id)}><Icon size={19}/><span>{label}</span></button>})}
+      <button className={mobileMenu?"menu-active":""} onClick={()=>setMobileMenu(true)}><Menu size={19}/><span>Meniu</span></button>
+    </nav>
 
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
