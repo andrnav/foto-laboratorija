@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
-  Layers3, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode, PlusCircle,
+  Layers3, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode, PlusCircle, FileText,
   Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
   ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
@@ -15,7 +15,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 const NAV = [
-  { id: "photo", label: "Foto medžiagos", icon: PaperBagIcon, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
+  { id: "photo", label: "Foto medžiagos", icon: FileText, sections: [{id:"paper",label:"Foto popierius"},{id:"chemical",label:"Chemija"},{id:"other",label:"Kita"}] },
   { id: "wide", label: "Plačiaformatė spauda", icon: Printer, sections: [{id:"paper",label:"Popierius"},{id:"ink",label:"Rašalas"},{id:"other",label:"Kita"}] },
   { id: "sublimation", label: "Sublimacija", icon: Coffee, sections: [{id:"cups",label:"Puodeliai"},{id:"other",label:"Kita"}] },
   { id: "framing", label: "Rėminimas", icon: Images, sections: [{id:"framing_materials",label:"Rėminimo medžiagos"},{id:"bases",label:"Pagrindai"},{id:"materials",label:"Naudojamos medžiagos"},{id:"other",label:"Kita"}] },
@@ -80,15 +80,6 @@ const STARTER = [
 ];
 
 function fmt(n) { return Number(n ?? 0).toLocaleString("lt-LT", { maximumFractionDigits: 2 }); }
-function tracksUsage(p) {
-  if (!p) return false;
-  if (p.category === "photo") return ["paper", "chemical"].includes(p.subcategory || p.kind);
-  if (p.category === "wide") return ["paper", "ink"].includes(p.subcategory || p.kind) || isInkProduct(p);
-  if (p.category === "sublimation") return (p.subcategory || "") === "cups" || /puodel/i.test(p.name || "");
-  if (p.category === "subframes" || (p.category === "framing" && p.subcategory === "subframes")) return true;
-  if (p.category === "framing") return ["subframes", "framing_materials", "bases", "materials"].includes(p.subcategory || "");
-  return false;
-}
 function clockParts(d = new Date()) {
   const date = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", month:"long", day:"numeric" }).format(d);
   const weekday = new Intl.DateTimeFormat("lt-LT", { timeZone:"Europe/Vilnius", weekday:"long" }).format(d);
@@ -256,7 +247,7 @@ export default function App() {
   const visibleProducts = useMemo(() => products.filter(p => belongsToActiveCategory(p, active)), [products, active]);
   const papers = visibleProducts.filter(p => p.kind === "paper");
   const chemicals = visibleProducts.filter(p => p.kind === "chemical").slice().sort((a,b) => chemicalSortKey(a.name)-chemicalSortKey(b.name) || a.name.localeCompare(b.name,"lt"));
-  const orderItems = products.filter(p => belongsToActiveCategory(p, active) && Number(p.quantity) < Number(p.min_quantity)).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
+  const orderItems = products.filter(p => belongsToActiveCategory(p, active) && Number(p.quantity) < Number(p.min_quantity) && !p.is_ordered).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
   const activeLogs = logs.filter(log => belongsToActiveCategory(log.products || products.find(p => p.id === log.product_id) || {}, active));
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
@@ -472,7 +463,7 @@ export default function App() {
 
   const pageTitle = activeLabel;
   const categoryProducts = products.filter(p => belongsToActiveCategory(p, active));
-  const categoryCounts = NAV.reduce((counts, item) => ({...counts, [item.id]: products.filter(p => belongsToActiveCategory(p, item.id)).length}), {});
+  const categoryCounts = NAV.reduce((counts, item) => ({...counts, [item.id]: products.filter(p => belongsToActiveCategory(p, item.id) && Number(p.quantity) < Number(p.min_quantity) && !p.is_ordered).length}), {});
 
   return <div className={`app-shell ${canManageStock ? "is-admin" : "view-only"}`}>
     <style>{`
@@ -870,35 +861,18 @@ export default function App() {
   overflow: hidden;
 }
 
-.usage-dashboard{display:flex;flex-direction:column;gap:18px;color:#24352b}
-.usage-controls{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px}
-.usage-controls label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#627267}
-.usage-controls select{height:42px;border:1px solid #dce6de;border-radius:10px;padding:0 11px;background:#fff;color:#26372d;font:inherit;font-size:13px}
-.usage-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.usage-kpi{border:1px solid #e3ebe5;border-radius:13px;padding:15px 16px;display:flex;flex-direction:column;gap:5px;background:#fbfdfb;min-width:0}
-.usage-kpi span{font-size:12px;color:#68786d;font-weight:650}.usage-kpi strong{font-size:27px;letter-spacing:-.7px;color:#26382e}.usage-kpi small{font-size:11px;color:#849188}
-.usage-kpi.used{background:#fff9f7;border-color:#f2e2dc}.usage-kpi.added{background:#f6fbf7;border-color:#dcece1}
-.usage-chart-card{border:1px solid #e4ebe5;border-radius:15px;padding:17px;background:#fff;min-width:0}
-.usage-chart-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:12px}.usage-chart-heading>div:first-child{display:flex;flex-direction:column;gap:4px}.usage-chart-heading b{font-size:15px}.usage-chart-heading small{font-size:11px;color:#849188}
-.usage-chart-toggles{display:flex;gap:14px;flex-wrap:wrap}.usage-chart-toggles label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:650;color:#58695e;cursor:pointer}.usage-chart-toggles input{accent-color:#628d70}.usage-chart-toggles i{width:8px;height:8px;border-radius:50%;display:inline-block}.used-dot{background:#d66a56}.added-dot{background:#3d9b70}
-.usage-chart-scroll{width:100%;overflow-x:auto}.usage-chart{display:block;width:100%;min-width:540px;height:auto;overflow:visible}
-.usage-summary{padding:12px 15px;border-radius:11px;background:#f5f8f5}.usage-summary span{font-size:12px;font-weight:750}.usage-summary p{font-size:12px;line-height:1.55;color:#728076;margin:5px 0 0}
-@media(max-width:680px){.usage-controls{grid-template-columns:1fr 1fr}.usage-controls label:last-child{grid-column:1/-1}.usage-kpis{grid-template-columns:1fr 1fr}.usage-kpi.average{grid-column:1/-1}.usage-kpi strong{font-size:23px}.usage-chart-heading{align-items:flex-start;flex-direction:column}.usage-chart-card{padding:12px}}
-
 `}
-
 </style>
     <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
       <div className="brand"><div className="brand-mark"><span></span><span></span></div><div><b>FOTO</b><small>LABORATORIJA</small></div><button className="mobile-close icon-button" onClick={()=>setMobileMenu(false)}><X size={20}/></button></div>
       {!user && <button className="login-button sidebar-login-top" onClick={()=>setModal({type:"login"})}><LockKeyhole size={18}/><span>Prisijungti</span></button>}
       <nav className="main-nav">
-        {NAV.map(item => { const Icon=item.icon; return <button key={item.id} className={`nav-item ${active===item.id?"selected":""}`} onClick={()=>{setActive(item.id);setMobileMenu(false);}}><Icon size={21}/><span>{item.label}</span><small>{categoryCounts[item.id]||0}</small></button>; })}
+        {NAV.map(item => { const Icon=item.icon; return <button key={item.id} className={`nav-item ${active===item.id?"selected":""}`} onClick={()=>{setActive(item.id);setMobileMenu(false);}}><Icon size={21}/><span>{item.label}</span>{categoryCounts[item.id] > 0 && <small className="nav-order-count">{categoryCounts[item.id]}</small>}</button>; })}
       </nav>
       <div className="nav-divider"></div>
       {canManageStock&&<>
       <div className="nav-caption">Sandėlio veiksmai</div>
       <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
-      <button className="nav-item" onClick={()=>setModal({type:"usage"})}><ChartNoAxesColumnIncreasing size={21}/><span>Sąnaudos</span></button>
       <div className="nav-divider"></div>
       </>}
       <button className="nav-item" onClick={()=>setModal({type:"history"})}><History size={21}/><span>Istorija</span></button>
@@ -955,7 +929,7 @@ export default function App() {
         <section className="panel category-panel photo-other-panel">
           <div className="panel-heading"><div className="panel-title"><span className="heading-icon"><Package size={23}/></span><div><h2>Kita</h2><p>Kitos foto laboratorijos medžiagos</p></div></div>{isAdmin&&<button className="small-green-button" onClick={()=>setModal({type:"product",subcategory:"other",kind:"item"})}><Plus size={16}/> Pridėti</button>}</div>
           <div className="generic-table"><div className="table-head"><span>Prekė</span><span>Kodas</span><span>Likutis / Min.</span><span>Veiksmai</span></div>
-            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><div className="generic-stock-cell"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
+            {categoryProducts.filter(p=>(p.subcategory||"other")==="other").slice().sort((a,b)=>displayName(a).localeCompare(displayName(b),"lt")).map(p=><div className="generic-row" key={p.id} style={productRowStyle(p)}><ProductName p={p}/><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<button className="row-action" onClick={()=>setModal({type:"adjust",product:p,mode:"set"})}><Pencil size={15}/></button>}{isAdmin&&<button className="row-action danger" onClick={()=>deleteProduct(p)}><Trash2 size={15}/></button>}</div></div>)}
             {!categoryProducts.some(p=>(p.subcategory||"other")==="other")&&<div className="empty-state">Kitos foto medžiagos bus rodomos čia.</div>}
           </div>
         </section>
@@ -988,13 +962,12 @@ export default function App() {
       <footer className="footer"><span>FOTO LABORATORIJA · Sandėlio sistema</span><span>{user&&isAdmin?"Administratoriaus režimas":user&&isEmployee?"Darbuotojo režimas":"Viešas peržiūros režimas"} · Laikas: Lietuva</span></footer>
     </main>
 
-    <nav className="mobile-bottom-nav">{NAV.map(item=>{const Icon=item.icon;return <button key={item.id} className={active===item.id?"active":""} onClick={()=>{setActive(item.id);}}><Icon size={19}/><span>{item.id==="photo"?"Foto":item.id==="wide"?"Plati":item.id==="sublimation"?"Sublimacija":item.id==="framing"?"Rėminimas":item.id==="subframes"?"Poremiai":item.id==="wall_decor"?"Wall decor":"Kitos"}</span></button>})}</nav>
+    <nav className="mobile-bottom-nav">{NAV.filter(item=>["photo","wide","sublimation","framing","subframes"].includes(item.id)).map(item=>{const Icon=item.icon;const label=item.id==="photo"?"Foto":item.id==="wide"?"Spauda":item.id==="sublimation"?"Subli":item.id==="framing"?"Rėminimas":"Poremiai";return <button key={item.id} className={active===item.id?"active":""} onClick={()=>setActive(item.id)}><Icon size={19}/><span>{label}</span></button>})}<button className={mobileMenu?"active":""} onClick={()=>setMobileMenu(true)}><Menu size={19}/><span>Meniu</span></button></nav>
 
     {modal?.type==="login"&&<Modal title="Prisijungimas prie sandėlio" onClose={()=>setModal(null)}><LoginForm onSubmit={signIn} busy={busy}/></Modal>}
     {modal?.type==="product"&&<Modal title="Pridėti naują prekę" onClose={()=>setModal(null)}><ProductForm category={active} kind={modal.kind} subcategory={modal.subcategory} onSubmit={addProduct} busy={busy}/></Modal>}
     {modal?.type==="adjust"&&<Modal title="Likučių koregavimas" onClose={()=>setModal(null)}><AdjustForm products={products} initialProduct={modal.product} mode={modal.mode} isAdmin={isAdmin} onSubmit={adjustStock} busy={busy}/></Modal>}
     {modal?.type==="scanner"&&<Modal title="QR kodo nuskaitymas" onClose={stopScanner}><p className="modal-help">Nukreipkite kamerą į prekės QR kodą. Foto popieriaus nuskaitymas automatiškai nurašo 1 vnt.; kitoms prekėms atidaromas likučio koregavimo langas.</p><div id="qr-reader" className="qr-reader" ref={scannerRef}></div><button className="secondary-button full-width" onClick={stopScanner}>Uždaryti kamerą</button></Modal>}
-    {modal?.type==="usage"&&<Modal title="Sąnaudos ir papildymai" onClose={()=>setModal(null)} wide><UsageAnalytics logs={logs} products={products}/></Modal>}
     {modal?.type==="history"&&<Modal title="Visa sandėlio istorija" onClose={()=>setModal(null)} wide><HistoryModal logs={logs} products={products}/></Modal>}
     {modal?.type==="reports"&&<Modal title="Sandėlio ataskaitos" onClose={()=>setModal(null)} wide><ReportsModal logs={logs} products={products}/></Modal>}
     {modal?.type==="qr"&&<Modal title="Prekės QR etiketė" onClose={()=>setModal(null)}><QrLabel product={modal.product}/></Modal>}
@@ -1002,9 +975,6 @@ export default function App() {
   </div>;
 }
 
-function PaperBagIcon({size=24, strokeWidth=2, ...props}) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 12v1M15 12v1"/></svg>;
-}
 function OrderStatusButton({ ordered, onComplete, disabled }) {
   const [confirming, setConfirming] = useState(false);
   const resetTimer = useRef(null);
@@ -1070,7 +1040,7 @@ function CopyCode({code,flash}) {
   return <button className="code-copy" onClick={copy} title="Kopijuoti prekės kodą"><span>{code}</span>{copied?<Check size={15}/>:<Copy size={15}/>}</button>;
 }
 function ProductRow({p,canManageStock,onAdjust,flash}) {
-  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><div className="paper-stock-cell"><StockBadge p={p}/></div><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
+  return <div className="paper-row"><span className="paper-width">{String(p.width_cm).replace(".",",")} cm{p.description&&<small style={{display:"block",fontSize:12,fontWeight:500,color:"#65776c",opacity:1}}>{p.description}</small>}</span><CopyCode code={p.code} flash={flash}/><StockBadge p={p}/><div className="row-actions">{canManageStock&&<><button className="row-action" title="Atimti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"remove"})}><Minus size={14}/></button><button className="row-action" title="Pridėti 1" onClick={()=>onAdjust({type:"adjust",product:p,mode:"add"})}><Plus size={14}/></button><button className="row-action" title="Koreguoti likutį" onClick={()=>onAdjust({type:"adjust",product:p,mode:"set"})}><Pencil size={14}/></button></>}</div></div>;
 }
 function TankBar({quantity,tone,small=false}) {
   const amount=Math.max(0,Number(quantity)||0);
@@ -1156,64 +1126,6 @@ function logCategory(log, products=[]) {
   const category = log.products?.category || products.find(p => p.id === log.product_id)?.category;
   return NAV.find(n => n.id === category)?.label || "Ištrinta / nepriskirta prekė";
 }
-
-function UsageAnalytics({logs=[], products=[]}) {
-  const [period,setPeriod]=useState("7"),[category,setCategory]=useState("all"),[productId,setProductId]=useState("all");
-  const [showUsed,setShowUsed]=useState(true),[showAdded,setShowAdded]=useState(true);
-  const eligible=products.filter(tracksUsage);
-  const eligibleIds=new Set(eligible.map(p=>String(p.id)));
-  const filteredProducts=eligible.filter(p=>category==="all"||p.category===category);
-  const visibleProducts=filteredProducts.filter(p=>productId==="all"||String(p.id)===productId);
-  const ids=new Set(visibleProducts.map(p=>String(p.id)));
-  const days=Number(period),today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(today); start.setDate(start.getDate()-days+1);
-  const daily=Array.from({length:days},(_,i)=>({date:new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),used:0,added:0}));
-  for(const log of logs){
-    const id=String(log.product_id||log.product?.id||"");
-    if(!ids.has(id)||!eligibleIds.has(id)||!log.created_at) continue;
-    const stamp=new Date(log.created_at); stamp.setHours(0,0,0,0);
-    const index=Math.round((stamp-start)/86400000);
-    if(index<0||index>=days) continue;
-    const delta=Number(log.delta)||0;
-    if(delta<0) daily[index].used+=Math.abs(delta);
-    if(delta>0) daily[index].added+=delta;
-  }
-  const used=daily.reduce((n,d)=>n+d.used,0),added=daily.reduce((n,d)=>n+d.added,0),avg7=used/(days/7);
-  const max=Math.max(1,...daily.flatMap(d=>[d.used,d.added])),w=900,h=250,left=42,right=16,top=20,bottom=38;
-  const x=i=>left+(i/Math.max(1,days-1))*(w-left-right),y=v=>top+(1-v/max)*(h-top-bottom);
-  const usedPoints=daily.map((d,i)=>`${x(i)},${y(d.used)}`).join(" "),addedPoints=daily.map((d,i)=>`${x(i)},${y(d.added)}`).join(" ");
-  const fmtShort=d=>d.toLocaleDateString("lt-LT",{day:"2-digit",month:"2-digit"});
-  const categoryOptions=NAV.filter(n=>["photo","wide","sublimation","framing","subframes"].includes(n.id));
-  return <div className="usage-dashboard">
-    <div className="usage-controls">
-      <label>Laikotarpis<select value={period} onChange={e=>setPeriod(e.target.value)}><option value="7">7 dienos</option><option value="14">14 dienų</option><option value="30">30 dienų</option></select></label>
-      <label>Kategorija<select value={category} onChange={e=>{setCategory(e.target.value);setProductId("all");}}><option value="all">Visos tinkamos kategorijos</option>{categoryOptions.map(n=><option value={n.id} key={n.id}>{n.label}</option>)}</select></label>
-      <label>Prekė<select value={productId} onChange={e=>setProductId(e.target.value)}><option value="all">Visos prekės</option>{filteredProducts.map(p=><option value={p.id} key={p.id}>{displayName(p)}</option>)}</select></label>
-    </div>
-    <div className="usage-kpis">
-      <div className="usage-kpi used"><span>Sunaudota per {days} d.</span><strong>{fmt(used)}</strong><small>{visibleProducts.length===1?visibleProducts[0].unit||"vnt.":"pagal pasirinktų prekių vienetus"}</small></div>
-      <div className="usage-kpi added"><span>Papildyta per {days} d.</span><strong>{fmt(added)}</strong><small>{visibleProducts.length===1?visibleProducts[0].unit||"vnt.":"pagal pasirinktų prekių vienetus"}</small></div>
-      <div className="usage-kpi average"><span>Vidutiniškai per 7 d.</span><strong>{fmt(avg7)}</strong><small>sunaudojimas, perskaičiuotas į 7 d.</small></div>
-    </div>
-    <div className="usage-chart-card">
-      <div className="usage-chart-heading"><div><b>Prekių judėjimas</b><small>Kasdieniai sunaudojimo ir papildymo kiekiai</small></div><div className="usage-chart-toggles">
-        <label><input type="checkbox" checked={showUsed} onChange={e=>setShowUsed(e.target.checked)}/><i className="used-dot"/>Sunaudojimas</label>
-        <label><input type="checkbox" checked={showAdded} onChange={e=>setShowAdded(e.target.checked)}/><i className="added-dot"/>Papildymai</label>
-      </div></div>
-      <div className="usage-chart-scroll"><svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Sunaudojimo ir papildymų grafikas" className="usage-chart">
-        {[0,.25,.5,.75,1].map((v,i)=><g key={i}><line x1={left} x2={w-right} y1={y(max*v)} y2={y(max*v)} stroke="#e8eee9" strokeDasharray="4 5"/><text x={left-9} y={y(max*v)+4} textAnchor="end" fill="#829087" fontSize="11">{fmt(max*v)}</text></g>)}
-        {showUsed&&<polyline points={usedPoints} fill="none" stroke="#d66a56" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>}
-        {showAdded&&<polyline points={addedPoints} fill="none" stroke="#3d9b70" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>}
-        {showUsed&&daily.map((d,i)=><circle key={`u${i}`} cx={x(i)} cy={y(d.used)} r="3.2" fill="#d66a56"/>)}
-        {showAdded&&daily.map((d,i)=><circle key={`a${i}`} cx={x(i)} cy={y(d.added)} r="3.2" fill="#3d9b70"/>)}
-        {daily.filter((d,i)=>days<=14||i%5===0||i===days-1).map(d=><text key={d.date.toISOString()} x={x(Math.round((d.date-start)/86400000))} y={h-10} textAnchor="middle" fill="#829087" fontSize="11">{fmtShort(d.date)}</text>)}
-      </svg></div>
-      {logs.length>0&&!used&&!added&&<div className="empty-state">Pasirinktu laikotarpiu judėjimo įrašų nėra.</div>}
-    </div>
-    <div className="usage-summary"><span>Skaičiavimo principas</span><p>Neigiamas likučio pokytis laikomas sunaudojimu, teigiamas – papildymu. Vidurkis visada perskaičiuojamas į 7 dienų laikotarpį, nepriklausomai nuo pasirinkto grafiko intervalo.</p></div>
-  </div>;
-}
-
 function HistoryModal({logs, products=[]}) {
   const [category, setCategory] = useState("all");
   const filtered = logs.filter(log => category === "all" || (log.products?.category || products.find(p => p.id === log.product_id)?.category) === category);
