@@ -375,7 +375,19 @@ export default function App() {
   }
 
   async function scanCode(code, alreadyLocked = false) {
-    const cleaned = String(code || "").trim();
+    let cleaned = String(code || "").trim();
+    // QR etiketėse saugoma nuoroda su ?scan=PREKES_KODAS, o ne vien pats prekės kodas.
+    // Kameros skaitytuvas grąžina visą nuorodą, todėl ištraukiame tą patį kodą,
+    // kurį iPhone naršyklė gauna atidarydama QR nuorodą.
+    if (/^https?:\/\//i.test(cleaned)) {
+      try {
+        const scannedUrl = new URL(cleaned);
+        const urlCode = scannedUrl.searchParams.get("scan");
+        if (urlCode) cleaned = urlCode.trim();
+      } catch {
+        // Jei tai netaisyklinga nuoroda, paliekame nuskaitytą tekstą kaip yra.
+      }
+    }
     if (!cleaned || (scanInProgress.current && !alreadyLocked)) return;
     scanInProgress.current = true;
     if (!user || !canManageStock) {
