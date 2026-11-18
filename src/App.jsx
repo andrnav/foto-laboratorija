@@ -4,7 +4,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { QRCodeCanvas } from "qrcode.react";
 import {
   Layers3, Printer, Coffee, Images, GalleryHorizontal, LayoutTemplate, Box, QrCode, PlusCircle, FileText,
-  Pencil, ChartNoAxesColumnIncreasing, Settings, LogOut, UserRound, RefreshCw,
+  Pencil, ChartNoAxesColumnIncreasing, LogOut, UserRound, RefreshCw,
   ShoppingCart, Package, FlaskConical, Copy, Check, Menu, X, History,
   ChevronRight, Plus, Minus, ScanLine, AlertTriangle,
   Download, Trash2, LockKeyhole, CalendarDays
@@ -247,7 +247,7 @@ export default function App() {
   const visibleProducts = useMemo(() => products.filter(p => belongsToActiveCategory(p, active)), [products, active]);
   const papers = visibleProducts.filter(p => p.kind === "paper");
   const chemicals = visibleProducts.filter(p => p.kind === "chemical").slice().sort((a,b) => chemicalSortKey(a.name)-chemicalSortKey(b.name) || a.name.localeCompare(b.name,"lt"));
-  const orderItems = products.filter(p => belongsToActiveCategory(p, active) && Number(p.quantity) < Number(p.min_quantity)).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
+  const orderItems = products.filter(p => belongsToActiveCategory(p, active) && Number(p.quantity) < Number(p.min_quantity) && !p.is_ordered).slice().sort((a,b) => displayName(a).localeCompare(displayName(b,"lt")));
   const activeLogs = logs.filter(log => belongsToActiveCategory(log.products || products.find(p => p.id === log.product_id) || {}, active));
   const activeLabel = NAV.find(n => n.id === active)?.label || "Medžiagos";
 
@@ -872,12 +872,12 @@ export default function App() {
       <div className="nav-divider"></div>
       {canManageStock&&<>
       <div className="nav-caption">Sandėlio veiksmai</div>
+      <button className="nav-item" onClick={startScanner}><ScanLine size={21}/><span>Skenuoti QR kodą</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"qrLibrary"})}><QrCode size={21}/><span>QR nuskaitymas</span></button>
       <div className="nav-divider"></div>
       </>}
       <button className="nav-item" onClick={()=>setModal({type:"history"})}><History size={21}/><span>Istorija</span></button>
       <button className="nav-item" onClick={()=>setModal({type:"reports"})}><ChartNoAxesColumnIncreasing size={21}/><span>Ataskaitos</span></button>
-      <button className="nav-item" onClick={()=>flash("Nustatymų skiltis bus išplėsta vėlesniame etape.")}><Settings size={21}/><span>Nustatymai</span></button>
       <div className="sidebar-bottom">
         {user && canManageStock && <><div className="admin-badge"><UserRound size={18}/><div><b>{isAdmin ? "Administratorius" : "Darbuotojas"}</b><small>{user.email}</small></div></div><button className="nav-item" onClick={signOut}><LogOut size={20}/><span>Atsijungti</span></button></>}
       </div>
